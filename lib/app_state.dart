@@ -59,7 +59,6 @@ class AppState extends ChangeNotifier {
     });
   }
 
-  /// Load user profile from Firestore after Firebase Auth sign-in.
   Future<void> loadUserFromFirestore(User firebaseUser) async {
     try {
       final doc = await _firestore
@@ -91,7 +90,6 @@ class AppState extends ChangeNotifier {
           rescuePasses: 5,
           isSubscribed: false,
         );
-        // Save initial user profile
         await _firestore.collection('users').doc(firebaseUser.uid).set({
           'name': user.name,
           'email': user.email,
@@ -106,17 +104,7 @@ class AppState extends ChangeNotifier {
       _isUserLoaded = true;
       notifyListeners();
     } catch (e) {
-      debugPrint('Error loading user from Firestore: $e');
-      user = UserProfile(
-        id: firebaseUser.uid,
-        name: firebaseUser.displayName ?? 'User',
-        email: firebaseUser.email ?? '',
-        coins: 0,
-        rescuePasses: 5,
-        isSubscribed: false,
-      );
-      _isUserLoaded = true;
-      notifyListeners();
+      debugPrint('Error loading user: $e');
     }
   }
 
@@ -128,30 +116,19 @@ class AppState extends ChangeNotifier {
     );
   }
 
-  /// Reset state when user signs out.
   void clearUser() {
-    user = UserProfile(
-      id: 'unknown',
-      name: 'Guest',
-      email: '',
-      coins: 0,
-      rescuePasses: 5,
-      isSubscribed: false,
-    );
+    user = UserProfile(id: 'unknown', name: 'Guest', email: '', coins: 0);
     _isUserLoaded = false;
-    totalAutoDeductions = 0;
-    totalConsumed = 0;
     notifyListeners();
   }
 
-  /// Persist a field update to Firestore.
   Future<void> _syncToFirestore(Map<String, dynamic> fields) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
     try {
       await _firestore.collection('users').doc(uid).set(fields, SetOptions(merge: true));
     } catch (e) {
-      debugPrint('Firestore sync error: $e');
+      debugPrint('Sync error: $e');
     }
   }
 
@@ -174,9 +151,7 @@ class AppState extends ChangeNotifier {
       }
     }
 
-    if (hour == 0 &&
-        minute == 0 &&
-        user.currentMealStatus != MealStatus.available) {
+    if (hour == 0 && minute == 0 && user.currentMealStatus != MealStatus.available) {
       user.lockedMealId = null;
       user.lockedVendorId = null;
       user.currentMealStatus = MealStatus.available;
@@ -194,8 +169,7 @@ class AppState extends ChangeNotifier {
   String getTimerMessage() {
     if (_currentTime.hour < 7) return "Lock-in starts at 7 AM";
     if (_currentTime.hour < 11) {
-      final deadline = DateTime(
-          _currentTime.year, _currentTime.month, _currentTime.day, 11);
+      final deadline = DateTime(_currentTime.year, _currentTime.month, _currentTime.day, 11);
       final diff = deadline.difference(_currentTime);
       return "Closing in ${diff.inHours}:${(diff.inMinutes % 60).toString().padLeft(2, '0')}:${(diff.inSeconds % 60).toString().padLeft(2, '0')}";
     }
@@ -204,16 +178,10 @@ class AppState extends ChangeNotifier {
     return "Window closed for today";
   }
 
-  Duration getLockCountdown() {
-    final deadline = DateTime(
-        _currentTime.year, _currentTime.month, _currentTime.day, 11);
-    return deadline.difference(_currentTime);
-  }
-
-  void subscribe() {
+  Future<void> subscribe() async {
     user.isSubscribed = true;
-    user.coins += 30; // Grant initial coins
-    _syncToFirestore({
+    user.coins += 90; 
+    await _syncToFirestore({
       'isSubscribed': true,
       'coins': user.coins,
     });
@@ -258,9 +226,7 @@ class AppState extends ChangeNotifier {
   void consumeMeal() {
     user.currentMealStatus = MealStatus.consumed;
     totalConsumed++;
-    _syncToFirestore({
-      'currentMealStatus': user.currentMealStatus.name,
-    });
+    _syncToFirestore({'currentMealStatus': user.currentMealStatus.name});
     notifyListeners();
   }
 }
