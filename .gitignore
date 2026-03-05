@@ -1,0 +1,116 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/build/
+
+# Exclude build outputs and intermediates
+build/
+android/app/build/
+android/build/
+android/.gradle/
+android/.idea/
+android/local.properties
+android/app/.cxx/
+android/app/.externalNativeBuild/
+android/app/.idea/
+android/app/build/intermediates/
+android/app/build/outputs/
+android/app/build/tmp/
+android/.DS_Store
+android/app/.DS_Store
+
+# APKs and other binaries
+*.apk
+*.aab
+*.ipa
+*.so
+*.dylib
+*.exe
+*.dll
+*.bin
+
+# iOS
+ios/Pods/
+ios/.symlinks/
+ios/.DS_Store
+ios/Flutter/ephemeral/
+ios/Flutter/Flutter.framework/
+ios/Flutter/App.framework/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/Flutter.podspec
+
+# macOS
+macos/Flutter/ephemeral/
+macos/Pods/
+macos/.DS_Store
+
+# Linux
+linux/flutter/ephemeral/
+linux/.DS_Store
+
+# Windows
+windows/flutter/ephemeral/
+windows/.DS_Store
+
+# Web
+web/.dart_tool/
+web/build/
+
+# VS Code
+.vscode/
+
+# Others
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*.swn
+*.bak
+*.old
+*.orig
+*.rej
+*.sublime-workspace
+*.sublime-project
+
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
