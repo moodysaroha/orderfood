@@ -75,7 +75,7 @@ class _AuthenticatedLoaderState extends State<_AuthenticatedLoader> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Colors.orange.shade300, Colors.orange.shade800],
+                colors: [Colors.deepPurple.shade300, Colors.deepPurple.shade800],
               ),
             ),
             child: Column(
@@ -88,7 +88,7 @@ class _AuthenticatedLoaderState extends State<_AuthenticatedLoader> {
                     ? NetworkImage(appState.user.profileImage!) 
                     : null,
                   child: appState.user.profileImage == null 
-                    ? const Icon(Icons.person, size: 50, color: Colors.orange) 
+                    ? const Icon(Icons.person, size: 50, color: Colors.deepPurple)
                     : null,
                 ),
                 const SizedBox(height: 24),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +12,7 @@ class AppState extends ChangeNotifier {
     id: 'unknown',
     name: 'Guest',
     email: '',
+    role: UserRole.unknown,
     coins: 0,
     rescuePasses: 5,
     isSubscribed: false,
@@ -22,16 +24,7 @@ class AppState extends ChangeNotifier {
   int totalAutoDeductions = 0;
   int totalConsumed = 0;
 
-  List<Vendor> vendors = [
-    Vendor(id: 'v1', name: 'Oven Express', menu: [
-      Meal(id: 'm1', name: 'Chole Bhature', vendorId: 'v1'),
-      Meal(id: 'm2', name: 'Paneer Wrap', vendorId: 'v1'),
-    ]),
-    Vendor(id: 'v2', name: 'Kitchen Atte', menu: [
-      Meal(id: 'm3', name: 'Thali', vendorId: 'v2'),
-      Meal(id: 'm4', name: 'Veg Burger', vendorId: 'v2'),
-    ]),
-  ];
+  List<Vendor> vendors = [];
 
   DateTime _currentTime = DateTime.now();
   DateTime get currentTime => _currentTime;
@@ -50,6 +43,7 @@ class AppState extends ChangeNotifier {
   }
 
   AppState() {
+    _loadMenuData();
     Timer.periodic(const Duration(seconds: 10), (timer) {
       if (_currentTime.year == DateTime.now().year) {
         _currentTime = DateTime.now();
@@ -57,6 +51,44 @@ class AppState extends ChangeNotifier {
         notifyListeners();
       }
     });
+  }
+
+  void _loadMenuData() {
+    // Simulated JSON data loading
+    const String jsonString = '''
+    [
+      {
+        "id": "v1",
+        "name": "Oven Express",
+        "logoUrl": "https://example.com/logo1.png",
+        "menu": [
+          {"id": "m1", "name": "Chole Bhature", "description": "Classic North Indian delight", "category": "Breakfast", "vendorId": "v1", "priceInCoins": 1.0, "isSoldOut": false},
+          {"id": "m2", "name": "Paneer Wrap", "description": "Spicy paneer in a soft tortilla", "category": "Snacks", "vendorId": "v1", "priceInCoins": 1.0, "isSoldOut": false},
+          {"id": "m5", "name": "Masala Dosa", "description": "Crispy crepe with potato filling", "category": "Breakfast", "vendorId": "v1", "priceInCoins": 1.0, "isSoldOut": true}
+        ]
+      },
+      {
+        "id": "v2",
+        "name": "Kitchen Atte",
+        "logoUrl": "https://example.com/logo2.png",
+        "menu": [
+          {"id": "m3", "name": "Thali", "description": "Full meal with dal, rice, and sabzi", "category": "Lunch", "vendorId": "v2", "priceInCoins": 1.0, "isSoldOut": false},
+          {"id": "m4", "name": "Veg Burger", "description": "Classic veg patty burger", "category": "Snacks", "vendorId": "v2", "priceInCoins": 1.0, "isSoldOut": false}
+        ]
+      }
+    ]
+    ''';
+    
+    final List<dynamic> list = jsonDecode(jsonString);
+    vendors = list.map((v) => Vendor.fromJson(v)).toList();
+    notifyListeners();
+  }
+
+  Future<void> toggleItemStock(String vendorId, String mealId) async {
+    final vendor = vendors.firstWhere((v) => v.id == vendorId);
+    final meal = vendor.menu.firstWhere((m) => m.id == mealId);
+    meal.isSoldOut = !meal.isSoldOut;
+    notifyListeners();
   }
 
   Future<void> loadUserFromFirestore(User firebaseUser) async {
@@ -72,6 +104,7 @@ class AppState extends ChangeNotifier {
           id: firebaseUser.uid,
           name: data['name'] ?? firebaseUser.displayName ?? 'User',
           email: data['email'] ?? firebaseUser.email ?? '',
+          role: _parseRole(data['role']),
           profileImage: data['photoURL'],
           coins: data['coins'] ?? 0,
           rescuePasses: data['rescuePasses'] ?? 5,
@@ -85,6 +118,7 @@ class AppState extends ChangeNotifier {
           id: firebaseUser.uid,
           name: firebaseUser.displayName ?? 'User',
           email: firebaseUser.email ?? '',
+          role: UserRole.unknown,
           profileImage: firebaseUser.photoURL,
           coins: 0,
           rescuePasses: 5,
@@ -93,6 +127,7 @@ class AppState extends ChangeNotifier {
         await _firestore.collection('users').doc(firebaseUser.uid).set({
           'name': user.name,
           'email': user.email,
+          'role': user.role.name,
           'photoURL': user.profileImage,
           'coins': user.coins,
           'rescuePasses': user.rescuePasses,
@@ -108,6 +143,14 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  UserRole _parseRole(String? role) {
+    if (role == null) return UserRole.unknown;
+    return UserRole.values.firstWhere(
+      (e) => e.name == role,
+      orElse: () => UserRole.unknown,
+    );
+  }
+
   MealStatus _parseMealStatus(String? status) {
     if (status == null) return MealStatus.available;
     return MealStatus.values.firstWhere(
@@ -117,7 +160,7 @@ class AppState extends ChangeNotifier {
   }
 
   void clearUser() {
-    user = UserProfile(id: 'unknown', name: 'Guest', email: '', coins: 0);
+    user = UserProfile(id: 'unknown', name: 'Guest', email: '', role: UserRole.unknown, coins: 0);
     _isUserLoaded = false;
     notifyListeners();
   }
@@ -133,10 +176,13 @@ class AppState extends ChangeNotifier {
   }
 
   void _checkLogic() {
+    // Time limit logic disabled for testing
+    /*
     final hour = _currentTime.hour;
     final minute = _currentTime.minute;
 
-    if (user.isSubscribed &&
+    if (user.role == UserRole.student &&
+        user.isSubscribed &&
         (hour > 11 || (hour == 11 && minute >= 1)) &&
         user.lockedMealId == null &&
         user.currentMealStatus == MealStatus.available) {
@@ -161,21 +207,14 @@ class AppState extends ChangeNotifier {
         'currentMealStatus': MealStatus.available.name,
       });
     }
+    */
   }
 
-  bool isLockWindow() => _currentTime.hour >= 7 && _currentTime.hour < 11;
-  bool isPickupWindow() => _currentTime.hour >= 12 && _currentTime.hour < 16;
+  bool isLockWindow() => true; // Always open for testing
+  bool isPickupWindow() => true; // Always open for testing
 
   String getTimerMessage() {
-    if (_currentTime.hour < 7) return "Lock-in starts at 7 AM";
-    if (_currentTime.hour < 11) {
-      final deadline = DateTime(_currentTime.year, _currentTime.month, _currentTime.day, 11);
-      final diff = deadline.difference(_currentTime);
-      return "Closing in ${diff.inHours}:${(diff.inMinutes % 60).toString().padLeft(2, '0')}:${(diff.inSeconds % 60).toString().padLeft(2, '0')}";
-    }
-    if (_currentTime.hour < 12) return "Kitchen is preparing your meal";
-    if (_currentTime.hour < 16) return "Pickup window active";
-    return "Window closed for today";
+    return "Time limits disabled for testing";
   }
 
   Future<void> subscribe() async {
@@ -189,8 +228,12 @@ class AppState extends ChangeNotifier {
   }
 
   String? lockMeal(String vendorId, String mealId) {
-    if (!isLockWindow()) return "Lock-in window closed! (7 AM - 11 AM)";
     if (user.coins <= 0) return "Not enough coins! Please subscribe.";
+
+    final vendor = vendors.firstWhere((v) => v.id == vendorId);
+    final meal = vendor.menu.firstWhere((m) => m.id == mealId);
+    
+    if (meal.isSoldOut) return "Sorry, this item is sold out!";
 
     user.lockedMealId = mealId;
     user.lockedVendorId = vendorId;

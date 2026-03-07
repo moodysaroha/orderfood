@@ -38,7 +38,7 @@ class AuthService with ChangeNotifier {
 
   /// Signs in with Google, creates/updates user document in Firestore,
   /// and returns the Firebase [User] on success.
-  Future<User?> signInWithGoogle() async {
+  Future<User?> signInWithGoogle({UserRole? role}) async {
     try {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) return null;
@@ -55,7 +55,7 @@ class AuthService with ChangeNotifier {
       final User? user = userCredential.user;
 
       if (user != null) {
-        await _createOrUpdateFirestoreUser(user);
+        await _createOrUpdateFirestoreUser(user, role: role);
         _isLoggedIn = true;
         notifyListeners();
       }
@@ -69,7 +69,7 @@ class AuthService with ChangeNotifier {
 
   /// Creates a new user document in Firestore or updates lastSignIn
   /// for returning users.
-  Future<void> _createOrUpdateFirestoreUser(User user) async {
+  Future<void> _createOrUpdateFirestoreUser(User user, {UserRole? role}) async {
     final docRef = _firestore.collection('users').doc(user.uid);
     final snapshot = await docRef.get();
 
@@ -78,19 +78,29 @@ class AuthService with ChangeNotifier {
         'uid': user.uid,
         'name': user.displayName ?? '',
         'email': user.email ?? '',
+        'role': role?.name ?? UserRole.student.name,
         'photoURL': user.photoURL ?? '',
         'createdAt': FieldValue.serverTimestamp(),
         'lastSignIn': FieldValue.serverTimestamp(),
         'coins': 0,
         'rescuePasses': 5,
         'isSubscribed': false,
+        'currentMealStatus': MealStatus.available.name,
       });
     } else {
-      await docRef.update({
+      Map<String, dynamic> updates = {
         'lastSignIn': FieldValue.serverTimestamp(),
-        'name': user.displayName ?? snapshot.data()?['name'] ?? '',
-        'photoURL': user.photoURL ?? snapshot.data()?['photoURL'] ?? '',
-      });
+      };
+      
+      if (user.displayName != null) updates['name'] = user.displayName;
+      if (user.photoURL != null) updates['photoURL'] = user.photoURL;
+      
+      // If a role was explicitly passed, update it
+      if (role != null) {
+        updates['role'] = role.name;
+      }
+
+      await docRef.update(updates);
     }
   }
 
@@ -216,16 +226,16 @@ class AuthService with ChangeNotifier {
       final userDetailsMap =
           jsonDecode(userDetailsJson) as Map<String, dynamic>;
       return UserProfile(
-        id: userDetailsMap['id'] ?? userDetailsMap['email'] ?? 'unknown',
-        name: userDetailsMap['name'] ??
-            '${userDetailsMap['firstName']} ${userDetailsMap['lastName']}',
-        email: userDetailsMap['email'],
-        firstName: userDetailsMap['firstName'],
+        id: userDetailsMap['id']?.toString() ?? userDetailsMap['email']?.toString() ?? 'unknown',
+        name: userDetailsMap['name']?.toString() ??
+            '${userDetailsMap['firstName'] ?? ""} ${userDetailsMap['lastName'] ?? ""}'.trim() ?? "User",
+        email: userDetailsMap['email']?.toString() ?? '',
+        firstName: userDetailsMap['firstName']?.toString(),
         isUserPro: userDetailsMap['isUserPro'] ?? false,
-        lastName: userDetailsMap['lastName'],
-        phoneNumber: userDetailsMap['phoneNumber'],
-        planType: userDetailsMap['planType'],
-        profileImage: userDetailsMap['profileImage'],
+        lastName: userDetailsMap['lastName']?.toString(),
+        phoneNumber: userDetailsMap['phoneNumber']?.toString(),
+        planType: userDetailsMap['planType']?.toString(),
+        profileImage: userDetailsMap['profileImage']?.toString(),
       );
     }
     return null;

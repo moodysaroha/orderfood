@@ -56,7 +56,7 @@ android/app/.DS_Store
 *.dylib
 *.exe
 *.dll
-# *.bin
+*.bin
 
 # iOS
 ios/Pods/

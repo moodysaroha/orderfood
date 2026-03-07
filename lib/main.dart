@@ -1,4 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -20,6 +22,12 @@ void main() async {
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
+      );
+      
+      // Initialize App Check
+      await FirebaseAppCheck.instance.activate(
+        androidProvider: kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+        appleProvider: kDebugMode ? AppleProvider.debug : AppleProvider.deviceCheck,
       );
     }
   } catch (e) {
@@ -48,7 +56,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.orange),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
       home: const AuthCheck(),
@@ -68,41 +76,44 @@ class MainWrapper extends StatelessWidget {
     final appState = Provider.of<AppState>(context);
     final authService = Provider.of<AuthService>(context);
 
-    if (!appState.user.isSubscribed) {
+    if (appState.user.role == UserRole.student && !appState.user.isSubscribed) {
       return const SubscriptionGate();
     }
 
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text("Food Lock & Key"),
-          bottom: const TabBar(
-            tabs: [
-              Tab(icon: Icon(Icons.person), text: "Student"),
-              Tab(icon: Icon(Icons.store), text: "Vendor"),
-              Tab(icon: Icon(Icons.admin_panel_settings), text: "Admin"),
-            ],
+    Widget body;
+    String title;
+
+    switch (appState.user.role) {
+      case UserRole.vendor:
+        body = const VendorDashboard();
+        title = "Vendor Dashboard";
+        break;
+      case UserRole.admin:
+        body = const AdminPanel();
+        title = "Admin Panel";
+        break;
+      case UserRole.student:
+      default:
+        body = const StudentHomeScreen();
+        title = "Student Home";
+        break;
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(title),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.timer),
+            onPressed: () => _showTimeTravelDialog(context, appState),
           ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.timer),
-              onPressed: () => _showTimeTravelDialog(context, appState),
-            ),
-            IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () => authService.logout(),
-            )
-          ],
-        ),
-        body: const TabBarView(
-          children: [
-            StudentHomeScreen(),
-            VendorDashboard(),
-            AdminPanel(),
-          ],
-        ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () => authService.logout(),
+          )
+        ],
       ),
+      body: body,
     );
   }
 
@@ -176,7 +187,7 @@ class _SubscriptionGateState extends State<SubscriptionGate> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.lock_person, size: 80, color: Colors.orange),
+              const Icon(Icons.lock_person, size: 80, color: Colors.deepPurple),
               const SizedBox(height: 24),
               const Text(
                 "Welcome to Lock & Key",
@@ -268,19 +279,19 @@ class StudentHomeScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text("Hello, ${user.name}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const Text("Student Profile"),
+                Text(user.role == UserRole.student ? "Student Profile" : "Vendor Profile"),
               ],
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.orange.shade100,
+                color: Colors.deepPurple.shade100,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
                 children: [
                   const Text("Balance: ", style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text("${user.coins} 🪙", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
+                  Text("${user.coins} 🪙", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.deepPurple)),
                 ],
               ),
             )
@@ -302,7 +313,7 @@ class StudentHomeScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.grey.shade100,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.orange.shade200),
+        border: Border.all(color: Colors.deepPurple.shade200),
       ),
       child: Column(
         children: [
@@ -328,21 +339,24 @@ class StudentHomeScreen extends StatelessWidget {
             subtitle: const Text("Tap to see menu"),
             children: vendor.menu.map((meal) => ListTile(
               title: Text(meal.name),
-              trailing: ElevatedButton(
-                onPressed: () {
-                  final error = appState.lockMeal(vendor.id, meal.id);
-                  if (error != null) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text(error),
-                      action: SnackBarAction(
-                        label: 'Change Time',
-                        onPressed: () => _showTimeTravelDialog(context, appState),
-                      ),
-                    ));
-                  }
-                },
-                child: const Text("🔒 LOCK"),
-              ),
+              subtitle: Text(meal.description),
+              trailing: meal.isSoldOut 
+                ? const Text("SOLD OUT", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold))
+                : ElevatedButton(
+                    onPressed: () {
+                      final error = appState.lockMeal(vendor.id, meal.id);
+                      if (error != null) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text(error),
+                          action: SnackBarAction(
+                            label: 'Change Time',
+                            onPressed: () => _showTimeTravelDialog(context, appState),
+                          ),
+                        ));
+                      }
+                    },
+                    child: const Text("🔒 LOCK"),
+                  ),
             )).toList(),
           ),
         )),
@@ -456,44 +470,126 @@ class StudentHomeScreen extends StatelessWidget {
   }
 }
 
-class VendorDashboard extends StatelessWidget {
+class VendorDashboard extends StatefulWidget {
   const VendorDashboard({super.key});
+
+  @override
+  State<VendorDashboard> createState() => _VendorDashboardState();
+}
+
+class _VendorDashboardState extends State<VendorDashboard> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
 
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
-    
-    final lockedMeals = appState.user.lockedVendorId == 'v1' ? 1 : 0;
+    final vendor = appState.vendors.isNotEmpty 
+        ? appState.vendors.firstWhere((v) => v.id == 'v1', orElse: () => appState.vendors.first)
+        : Vendor(id: 'unknown', name: 'Unknown Vendor', menu: []);
+
+    return Column(
+      children: [
+        TabBar(
+          controller: _tabController,
+          labelColor: Colors.deepPurple,
+          unselectedLabelColor: Colors.grey,
+          indicatorColor: Colors.deepPurple,
+          tabs: const [
+            Tab(icon: Icon(Icons.dashboard), text: "Overview"),
+            Tab(icon: Icon(Icons.restaurant_menu), text: "Menu"),
+            Tab(icon: Icon(Icons.history), text: "Orders"),
+          ],
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildOverviewTab(appState, vendor),
+              _buildMenuTab(appState, vendor),
+              _buildOrdersTab(appState),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOverviewTab(AppState appState, Vendor vendor) {
+    final lockedMeals = appState.user.lockedVendorId == vendor.id ? 1 : 0; // Simulated count
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("Oven Express Dashboard", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+          Text("${vendor.name} Dashboard", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
           const SizedBox(height: 20),
           _buildPreOrderManifest(lockedMeals),
-          const SizedBox(height: 20),
-          const Text("Menu Management", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          SwitchListTile(
-            title: const Text("Chole Bhature Available"),
-            value: true,
-            onChanged: (v) {},
-          ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
+          const Text("Quick Actions", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
           ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
-            onPressed: appState.user.currentMealStatus == MealStatus.locked && appState.isPickupWindow() 
-              ? () => appState.consumeMeal() 
-              : null,
-            icon: const Icon(Icons.qr_code_scanner),
-            label: const Text("SCAN QR (Demo Simulation)"),
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size.fromHeight(60),
+              backgroundColor: Colors.deepPurple,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () {
+              // Simulated Scan
+              if (appState.user.currentMealStatus == MealStatus.locked && appState.isPickupWindow()) {
+                appState.consumeMeal();
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Order Confirmed!")));
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("No active orders for pickup or window closed.")));
+              }
+            },
+            icon: const Icon(Icons.qr_code_scanner, size: 28),
+            label: const Text("SCAN PICKUP QR", style: TextStyle(fontSize: 18)),
           ),
-          if (appState.user.currentMealStatus == MealStatus.locked && !appState.isPickupWindow())
-            const Padding(
-              padding: EdgeInsets.only(top: 8.0),
-              child: Text("Scanning only available 12 PM - 4 PM", style: TextStyle(color: Colors.red, fontSize: 12)),
-            )
+          const SizedBox(height: 24),
+          _buildStatSummary(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMenuTab(AppState appState, Vendor vendor) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: vendor.menu.length,
+      itemBuilder: (context, index) {
+        final meal = vendor.menu[index];
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: ListTile(
+            title: Text(meal.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text("${meal.category} • ${meal.description}"),
+            trailing: Switch(
+              value: !meal.isSoldOut,
+              activeColor: Colors.green,
+              onChanged: (value) => appState.toggleItemStock(vendor.id, meal.id),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildOrdersTab(AppState appState) {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.assignment, size: 64, color: Colors.grey),
+          SizedBox(height: 16),
+          Text("No order history yet today", style: TextStyle(color: Colors.grey)),
         ],
       ),
     );
@@ -501,18 +597,26 @@ class VendorDashboard extends StatelessWidget {
 
   Widget _buildPreOrderManifest(int count) {
     return Card(
-      color: Colors.orange.shade50,
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: Colors.deepPurple.shade50,
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
-            const Text("Pre-Order Manifest", style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
+            const Row(
+              children: [
+                Icon(Icons.inventory, color: Colors.deepPurple),
+                SizedBox(width: 8),
+                Text("Today's Pre-Order Manifest", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.deepPurple)),
+              ],
+            ),
+            const Divider(height: 32),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _manifestItem("Total Prep", count.toString()),
-                _manifestItem("Confirmed Rev", "${count * 0.9} 🪙"),
+                _manifestItem("Total Prep Needed", count.toString(), Icons.restaurant),
+                _manifestItem("Guaranteed Revenue", "${count * 0.9} 🪙", Icons.payments),
               ],
             )
           ],
@@ -521,12 +625,43 @@ class VendorDashboard extends StatelessWidget {
     );
   }
 
-  Widget _manifestItem(String label, String value) {
+  Widget _manifestItem(String label, String value, IconData icon) {
     return Column(
       children: [
-        Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.orange)),
-        Text(label, style: const TextStyle(fontSize: 12)),
+        Icon(icon, color: Colors.deepPurple, size: 24),
+        const SizedBox(height: 8),
+        Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.deepPurple)),
+        Text(label, style: const TextStyle(fontSize: 12, color: Colors.deepPurple)),
       ],
+    );
+  }
+
+  Widget _buildStatSummary() {
+    return Row(
+      children: [
+        Expanded(child: _statCard("Total Scanned", "0", Colors.blue)),
+        const SizedBox(width: 12),
+        Expanded(child: _statCard("Pending", "1", Colors.orange)),
+      ],
+    );
+  }
+
+  Widget _statCard(String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
+        ],
+      ),
     );
   }
 }
