@@ -98,7 +98,8 @@ The following features are planned for future releases:
 - **Platform Commission** -- A percentage-based commission system for the platform owner
 - **Multiple Vendors** -- Students will be able to browse and order from multiple campus restaurants
 - **Push Notifications** -- Real-time alerts for order status changes
-- add logout button for both student
+- add logout button for both student and vendor
 - change theme to be purple
 - add both light and dark theme
-- 
+- add admin dashboard for me
+- remove delivery feature and status till order placed and ready. It's not a delivery app. Students will be able to come to restaurant and eat food without waiting for preparation time. 
