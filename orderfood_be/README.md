@@ -31,7 +31,7 @@ cp .env.example .env
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `DATABASE_URL` | `postgresql://postgres:postgres@localhost:5432/orderfood?schema=public` | PostgreSQL connection string |
+| `DATABASE_URL` | `postgresql://postgres:admin@localhost:5433/orderfood?schema=public` | PostgreSQL connection string |
 | `JWT_SECRET` | `dev-secret-key-change-in-production` | JWT signing key (change in prod) |
 | `JWT_EXPIRES_IN` | `7d` | Token expiry duration |
 | `PORT` | `3000` | Server port |
@@ -41,7 +41,24 @@ cp .env.example .env
 | `CORS_ORIGIN` | `*` | Allowed CORS origin |
 | `POLLING_INTERVAL_MS` | `15000` | SDUI polling interval sent to Flutter client |
 
-### 3. Generate Prisma client
+### 3. Run PostgreSQL with Docker (recommended)
+
+From the `orderfood_be` directory:
+
+```bash
+docker compose up -d db
+```
+
+This starts a local PostgreSQL instance with:
+
+- **Host/port**: `localhost:5433`
+- **User**: `postgres`
+- **Password**: `admin`
+- **Database**: `orderfood`
+
+Data is stored in the named Docker volume `orderfood_pg_data` so it persists across container restarts.
+
+### 4. Generate Prisma client
 
 This happens automatically during `npm install`, but if you ever change `prisma/schema.prisma`, regenerate manually:
 
@@ -49,13 +66,13 @@ This happens automatically during `npm install`, but if you ever change `prisma/
 npm run prisma:generate
 ```
 
-### 4. Create database and run migrations
+### 5. Create database and run migrations
 
 ```bash
 npx prisma migrate dev --name init
 ```
 
-### 5. Seed test data
+### 6. Seed test data
 
 ```bash
 npm run prisma:seed
@@ -67,7 +84,7 @@ This creates:
 - **Student 2:** `priya@student.com` / `password123`
 - 6 menu items, 3 orders (2 delivered, 1 pending), and matching revenue entries
 
-### 6. Start the dev server
+### 7. Start the dev server
 
 ```bash
 npm run dev
