@@ -1,0 +1,135 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  VENDOR
+  STUDENT
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  role         Role
+  createdAt    DateTime @default(now())
+  vendor       Vendor?
+  student      Student?
+}
+
+model Vendor {
+  id               String           @id @default(uuid())
+  userId           String           @unique
+  user             User             @relation(fields: [userId], references: [id])
+  restaurantName   String
+  description      String?
+  createdAt        DateTime         @default(now())
+  menuItems        MenuItem[]
+  orders           Order[]
+  revenueEntries   RevenueEntry[]
+  revenueSummaries RevenueSummary[]
+}
+
+model Student {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  name      String
+  createdAt DateTime @default(now())
+  orders    Order[]
+}
+
+model MenuItem {
+  id           String      @id @default(uuid())
+  vendorId     String
+  vendor       Vendor      @relation(fields: [vendorId], references: [id])
+  name         String
+  description  String?
+  priceInPaise Int
+  imageUrl     String?
+  isAvailable  Boolean     @default(true)
+  category     String?
+  sortOrder    Int         @default(0)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  orderItems   OrderItem[]
+}
+
+model Order {
+  id                 String       @id @default(uuid())
+  studentId          String
+  student            Student      @relation(fields: [studentId], references: [id])
+  vendorId           String
+  vendor             Vendor       @relation(fields: [vendorId], references: [id])
+  status             OrderStatus  @default(PENDING)
+  totalAmountInPaise Int
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  items              OrderItem[]
+  revenueEntry       RevenueEntry?
+}
+
+model OrderItem {
+  id                  String   @id @default(uuid())
+  orderId             String
+  order               Order    @relation(fields: [orderId], references: [id])
+  menuItemId          String
+  menuItem            MenuItem @relation(fields: [menuItemId], references: [id])
+  quantity            Int
+  priceAtOrderInPaise Int
+}
+
+model SduiLayout {
+  id         String   @id @default(uuid())
+  screenName String
+  role       Role
+  layoutJson Json
+  version    Int      @default(1)
+  updatedAt  DateTime @updatedAt
+
+  @@unique([screenName, role])
+}
+
+// --- Revenue Module (isolated) ---
+
+model RevenueEntry {
+  id                 String   @id @default(uuid())
+  vendorId           String
+  vendor             Vendor   @relation(fields: [vendorId], references: [id])
+  orderId            String   @unique
+  order              Order    @relation(fields: [orderId], references: [id])
+  grossAmountInPaise Int
+  commissionInPaise  Int      @default(0)
+  netAmountInPaise   Int
+  currency           String   @default("INR")
+  createdAt          DateTime @default(now())
+}
+
+model RevenueSummary {
+  id                     String   @id @default(uuid())
+  vendorId               String
+  vendor                 Vendor   @relation(fields: [vendorId], references: [id])
+  date                   DateTime @db.Date
+  totalOrderCount        Int      @default(0)
+  grossRevenueInPaise    Int      @default(0)
+  totalCommissionInPaise Int      @default(0)
+  netRevenueInPaise      Int      @default(0)
+  currency               String   @default("INR")
+  updatedAt              DateTime @updatedAt
+
+  @@unique([vendorId, date])
+}
