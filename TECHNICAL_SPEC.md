@@ -9,13 +9,14 @@ A full-stack campus food ordering system with Server-Driven UI architecture.
 1. [System Overview](#system-overview)
 2. [Technology Stack](#technology-stack)
 3. [User Roles](#user-roles)
-4. [Backend Architecture](#backend-architecture)
-5. [Frontend Architecture](#frontend-architecture)
-6. [Database Schema](#database-schema)
-7. [API Reference](#api-reference)
-8. [SDUI System](#sdui-system)
-9. [Feature Map](#feature-map)
-10. [File Reference](#file-reference)
+4. [UI Design](#ui-design)
+5. [Backend Architecture](#backend-architecture)
+6. [Frontend Architecture](#frontend-architecture)
+7. [Database Schema](#database-schema)
+8. [API Reference](#api-reference)
+9. [SDUI System](#sdui-system)
+10. [Feature Map](#feature-map)
+11. [File Reference](#file-reference)
 
 ---
 
@@ -33,7 +34,8 @@ OrderFood is a mobile-first food ordering platform for campus restaurants. It co
 |----------|-----------|
 | Server-Driven UI | Update app layouts without releasing new app versions |
 | Paise-based currency | Avoid floating-point precision issues (1 INR = 100 paise) |
-| Isolated modules | Revenue, Admin, Payment, Notification modules are self-contained for extensibility |
+| Isolated modules | Revenue, Admin, Payment, Notification, Commission modules are self-contained for extensibility |
+| UI | Modern card-based design, gradient headers, clean vertical scrolling |
 | JWT authentication | Stateless auth, mobile-friendly |
 | Pickup-based flow | No delivery - students pick up orders when READY |
 | UPI QR Payments | Native Indian payment method, works with all UPI apps |
@@ -99,11 +101,57 @@ OrderFood is a mobile-first food ordering platform for campus restaurants. It co
 
 ### ADMIN
 - Platform owner/developer
-- Views platform-wide statistics
-- Manages all vendors (view, delete, bulk upload)
-- Manages all students (view, delete)
-- Views all orders across vendors
+- Views platform-wide statistics on inspired dashboard
+- Manages vendors (via dashboard quick action - card-based UI)
+- Manages students (via dashboard quick action - card-based UI)
+- Views all orders (bottom nav tab)
+- Manages vendor settlements/payouts (bottom nav tab)
+- Configures platform settings (bottom nav tab)
 - Can logout from app
+
+---
+
+## UI Design
+
+The app features a modern, design with clean vertical scrolling and no horizontal scroll areas.
+
+### Navigation Structure
+
+| Role | Bottom Nav Tabs | Additional Screens |
+|------|-----------------|-------------------|
+| **Student** | Home, Orders | Restaurant menu (push) |
+| **Vendor** | Home, Menu, Orders | Add menu item (push) |
+| **Admin** | Home, Orders, Payouts, Settings | Vendors (push), Students (push) |
+
+### Design Elements
+
+| Element | Description |
+|---------|-------------|
+| **Gradient Headers** | Purple gradient in student home, stat cards use color-coded backgrounds |
+| **Restaurant Cards** | Image placeholder with gradient, info chips, menu count badge |
+| **Stat Cards** | Tappable cards with icon, value, label - used in admin dashboard |
+| **Quick Action Cards** | Two-column cards with icon, label, and arrow indicator |
+| **Profile Cards** | Used for vendors/students with avatar, stats row at bottom |
+| **Today's Summary** | Gradient container with key metrics for the day |
+
+### Color Scheme
+
+| Context | Color |
+|---------|-------|
+| Primary | Purple (Material 3) |
+| Vendors | Orange |
+| Students | Blue |
+| Orders/Success | Green |
+| Revenue | Purple |
+| Danger/Delete | Red |
+
+### Typography
+
+- **Large titles**: SliverAppBar.large for main screens
+- **Section headers**: 16-18px, semi-bold
+- **Card titles**: 16px, bold
+- **Subtitles**: 13px, grey
+- **Stat values**: 22-24px, bold with color
 
 ---
 
@@ -609,7 +657,7 @@ MenuItem 1:N OrderItem
 
 | File | Purpose |
 |------|---------|
-| `features/student/student_home_screen.dart` | Bottom nav, vendor list (API), logout |
+| `features/student/student_home_screen.dart` | Bottom nav (Home, Orders), restaurant cards, gradient header |
 | `features/student/menu/student_menu_screen.dart` | SDUI menu browsing |
 | `features/student/orders/student_orders_screen.dart` | Order history, payment status |
 | `features/student/payment/qr_payment_screen.dart` | QR code payment, UPI deep link |
@@ -618,11 +666,19 @@ MenuItem 1:N OrderItem
 
 | File | Purpose |
 |------|---------|
-| `features/admin/admin_home_screen.dart` | Bottom nav with 4 tabs |
-| `features/admin/admin_dashboard_screen.dart` | SDUI platform stats, logout |
-| `features/admin/admin_vendors_screen.dart` | Vendor list, delete |
-| `features/admin/admin_students_screen.dart` | Student list, delete |
+| `features/admin/admin_home_screen.dart` | Bottom nav with 4 tabs (Home, Orders, Payouts, Settings) |
+| `features/admin/admin_dashboard_screen.dart` | Custom dashboard with stat cards, quick actions, today's summary |
+| `features/admin/admin_vendors_screen.dart` | Card-based vendor list (accessed via quick action) |
+| `features/admin/admin_students_screen.dart` | Card-based student list (accessed via quick action) |
 | `features/admin/admin_orders_screen.dart` | All orders, status filter |
+| `features/admin/admin_settlements_screen.dart` | Vendor balances, settlement management |
+| `features/admin/admin_settings_screen.dart` | Platform configuration (commission, UPI, etc.) |
+
+#### Features - Vendor Menu
+
+| File | Purpose |
+|------|---------|
+| `features/vendor/menu/add_menu_item_screen.dart` | Add new menu item form |
 
 ---
 

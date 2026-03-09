@@ -18,29 +18,42 @@ class AdminHomeScreen extends StatefulWidget {
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
   int _currentIndex = 0;
 
-  late final List<Widget> _screens = [
-    AdminDashboardScreen(onLogout: widget.onLogout),
-    const AdminVendorsScreen(),
-    const AdminStudentsScreen(),
-    const AdminOrdersScreen(),
-    const AdminSettlementsScreen(),
-    const AdminSettingsScreen(),
-  ];
+  void _navigateToScreen(String route) {
+    Widget? screen;
+    if (route == '/admin/vendors') {
+      screen = const AdminVendorsScreen();
+    } else if (route == '/admin/students') {
+      screen = const AdminStudentsScreen();
+    }
+    if (screen != null) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => screen!),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final screens = [
+      AdminDashboardScreen(
+        onLogout: widget.onLogout,
+        onNavigateToScreen: _navigateToScreen,
+      ),
+      const AdminOrdersScreen(),
+      const AdminSettlementsScreen(),
+      const AdminSettingsScreen(),
+    ];
+
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: screens[_currentIndex],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (i) => setState(() => _currentIndex = i),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.dashboard), label: 'Dashboard'),
-          NavigationDestination(icon: Icon(Icons.store), label: 'Vendors'),
-          NavigationDestination(icon: Icon(Icons.people), label: 'Students'),
-          NavigationDestination(icon: Icon(Icons.receipt_long), label: 'Orders'),
-          NavigationDestination(icon: Icon(Icons.payments), label: 'Settlements'),
-          NavigationDestination(icon: Icon(Icons.settings), label: 'Settings'),
+          NavigationDestination(icon: Icon(Icons.dashboard_rounded), label: 'Home'),
+          NavigationDestination(icon: Icon(Icons.receipt_long_rounded), label: 'Orders'),
+          NavigationDestination(icon: Icon(Icons.account_balance_wallet_rounded), label: 'Payouts'),
+          NavigationDestination(icon: Icon(Icons.settings_rounded), label: 'Settings'),
         ],
       ),
     );
