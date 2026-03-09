@@ -1,8 +1,34 @@
-.vs/CMakeWorkspaceSettings.json
-.vs/ProjectSettings.json
-.vs/slnx.sqlite
-.vs/VSWorkspaceState.json
-.vs/orderfood.slnx/FileContentIndex/29823372-fcc1-4630-8cc0-7670b7ced829.vsidx
-.vs/orderfood.slnx/v18/.wsuo
-.vs/orderfood.slnx/v18/Browse.VC.db
-.vs/orderfood.slnx/v18/DocumentLayout.json
+# VS
+.vs/
+
+# Environment files (contain secrets)
+.env
+.env.local
+.env.cloud
+.env.production
+
+# Keep example
+!.env.example
+
+# Node
+node_modules/
+dist/
+
+# Uploads
+uploads/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# Temp files
+*.txt
+!README*.txt

@@ -1,8 +1,29 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-const String _baseUrl = 'http://10.0.2.2:3000/api'; // Android emulator -> host
+/// API Configuration
+/// 
+/// For local development:
+///   - Android Emulator: http://10.0.2.2:3000/api
+///   - iOS Simulator:    http://localhost:3000/api
+///   - Physical device:  http://YOUR_PC_IP:3000/api
+/// 
+/// For cloud (Render):
+///   - https://your-app-name.onrender.com/api
+class ApiConfig {
+  // Toggle this to switch between local and cloud
+  static const bool useCloud = false;
+  
+  // Cloud URL (update after deploying to Render)
+  static const String cloudUrl = 'https://orderfood-api.onrender.com/api';
+  
+  // Local URL (Android emulator -> host machine)
+  static const String localUrl = 'http://10.0.2.2:3000/api';
+  
+  static String get baseUrl => useCloud ? cloudUrl : localUrl;
+}
 
 final apiClientProvider = Provider<ApiClient>((ref) {
   return ApiClient();
@@ -14,11 +35,15 @@ class ApiClient {
 
   ApiClient() {
     _dio = Dio(BaseOptions(
-      baseUrl: _baseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
+      baseUrl: ApiConfig.baseUrl,
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 15),
       headers: {'Content-Type': 'application/json'},
     ));
+    
+    if (kDebugMode) {
+      print('API Base URL: ${ApiConfig.baseUrl}');
+    }
 
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
