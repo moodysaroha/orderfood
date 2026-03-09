@@ -29,9 +29,9 @@ class _VendorHomeScreenState extends State<VendorHomeScreen> {
         selectedIndex: _currentIndex,
         onDestinationSelected: (i) => setState(() => _currentIndex = i),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.dashboard), label: 'Dashboard'),
-          NavigationDestination(icon: Icon(Icons.restaurant_menu), label: 'Menu'),
-          NavigationDestination(icon: Icon(Icons.receipt_long), label: 'Orders'),
+          NavigationDestination(icon: Icon(Icons.dashboard_rounded), label: 'Home'),
+          NavigationDestination(icon: Icon(Icons.restaurant_menu_rounded), label: 'Menu'),
+          NavigationDestination(icon: Icon(Icons.receipt_long_rounded), label: 'Orders'),
         ],
       ),
     );

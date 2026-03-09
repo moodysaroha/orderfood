@@ -65,19 +65,30 @@ The admin dashboard gives the platform owner/developer full visibility into the 
 
 **What admins can do:**
 
-- **View Platform Stats:**
-  - Total vendors, students, and orders
+- **View Platform Stats** (dashboard):
+  - Total vendors, students, and orders in attractive stat cards
   - Revenue today and total revenue
-- **Manage Vendors:**
-  - View all registered vendors with their stats
+  - Today's summary section with quick metrics
+- **Quick Actions:**
+  - Navigate to Vendors and Students management from dashboard
+  - Tappable stat cards for quick navigation
+- **Manage Vendors** (via quick action):
+  - View all registered vendors with cards showing stats
   - Delete vendors and their associated data
   - Bulk upload vendors with menu items via JSON
-- **Manage Settlements:**
+- **Manage Students** (via quick action):
+  - View all registered students with profile cards
+  - See order count and total spent per student
+  - Delete students and their associated data
+- **Manage Orders** (bottom nav tab):
+  - View all orders across the platform
+  - Filter by status or vendor
+- **Manage Settlements** (bottom nav - Payouts tab):
   - View vendor pending balances (earnings after commission)
   - Create settlement requests for vendors
   - Mark settlements as paid with transaction reference
   - Track settlement history
-- **Configure Platform Settings:**
+- **Configure Platform Settings** (bottom nav - Settings tab):
   - Set commission percentage (0-100%)
   - Set platform UPI ID (where students pay)
   - Set platform name (shown in UPI apps)
@@ -144,6 +155,30 @@ All prices and revenue figures are displayed in **Indian Rupees (INR)**. For exa
 
 ---
 
+## UI Design
+
+The app features a modern, design:
+
+### Student Experience
+- **Gradient header** with "Hungry? Order from campus restaurants"
+- **Restaurant cards** with image placeholders, gradient backgrounds
+- **Info chips** showing delivery time and "Campus Special" tags
+- **Clean vertical scrolling** with no horizontal scroll
+
+### Admin Experience  
+- **4-tab bottom navigation**: Home, Orders, Payouts, Settings
+- **Dashboard with stat cards** that are tappable for navigation
+- **Quick action cards** with arrow indicators
+- **Today's summary section** with gradient background
+- **Card-based lists** for Vendors and Students (via quick actions)
+
+### Vendor Experience
+- **3-tab bottom navigation**: Home, Menu, Orders
+- **Notification bell** in app bar for push notifications
+- **Add menu items** with + icon in menu screen
+
+---
+
 ## Future Roadmap
 
 The following features are planned for future releases:
@@ -151,4 +186,5 @@ The following features are planned for future releases:
 - **Automated Settlements** -- Scheduled vendor payouts via bank transfer
 - **Order Analytics** -- Detailed analytics for vendors and admins
 - **Vendor Mobile App** -- Dedicated app for vendors with better order management
+- **Restaurant Images** -- Upload and display restaurant photos
 

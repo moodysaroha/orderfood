@@ -7,8 +7,8 @@ Node.js/TypeScript backend for the OrderFood campus food ordering system. Uses E
 | Role | Description |
 |------|-------------|
 | **VENDOR** | Restaurant owner - manages menu, views orders, tracks revenue |
-| **STUDENT** | Customer - browses menu, places orders, tracks order status |
-| **ADMIN** | Platform owner - views platform stats, manages all vendors/students/orders |
+| **STUDENT** | Customer - browses restaurants, places orders, pays via QR, tracks status |
+| **ADMIN** | Platform owner - views stats, manages vendors/students (via dashboard quick actions), orders, settlements, settings |
 
 ---
 
@@ -313,6 +313,35 @@ PENDING → CONFIRMED → PREPARING → READY → (student picks up)
 - **Commission module is fully isolated** in `src/modules/commission/` with platform config, vendor balances, and settlement tracking. Calculates commission on payments and tracks vendor payouts.
 - **All monetary values** are stored as integers in **paise** (1 INR = 100 paise) to avoid floating-point issues. Conversion helpers are in `src/utils/currency.ts`.
 - **SDUI** -- The server builds screen layouts as JSON using `ScreenBuilder`. The Flutter app parses and renders them. Screens can be redesigned from the backend without app updates.
+
+---
+
+## Frontend UI Design
+
+The Flutter app features a modern design:
+
+### Admin Navigation (4 tabs)
+| Tab | Screen | Access Method |
+|-----|--------|---------------|
+| Home | Dashboard with stats & quick actions | Bottom nav |
+| Orders | All orders across platform | Bottom nav |
+| Payouts | Settlements management | Bottom nav |
+| Settings | Platform configuration | Bottom nav |
+| Vendors | Vendor management | Quick action from dashboard |
+| Students | Student management | Quick action from dashboard |
+
+### Student Navigation (2 tabs)
+| Tab | Screen | Features |
+|-----|--------|----------|
+| Home | Restaurant list | cards with gradient headers |
+| Orders | Order history | Payment status, order tracking |
+
+### Vendor Navigation (3 tabs)
+| Tab | Screen | Features |
+|-----|--------|----------|
+| Home | Dashboard | Revenue stats, recent orders |
+| Menu | Menu management | Add/edit items with + icon |
+| Orders | Order list | Status updates |
 
 ---
 
