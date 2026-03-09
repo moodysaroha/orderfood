@@ -13,6 +13,17 @@ import { StudentController } from './controllers/student.controller';
 import { VendorService } from './services/vendor.service';
 import { StudentService } from './services/student.service';
 import { RevenueRepository, RevenueService, RevenueController } from './modules/revenue';
+import { AdminRepository, AdminService, AdminController } from './modules/admin';
+import { PaymentRepository, PaymentService, PaymentController } from './modules/payment';
+import {
+  NotificationRepository,
+  NotificationService,
+  NotificationController,
+  FcmService,
+  MockFcmService,
+  INotificationService,
+} from './modules/notification';
+import { env } from './config/env';
 
 export interface Container {
   // Repositories
@@ -28,6 +39,9 @@ export interface Container {
   revenueService: RevenueService;
   vendorService: VendorService;
   studentService: StudentService;
+  adminService: AdminService;
+  paymentService: PaymentService;
+  notificationService: INotificationService;
 
   // Controllers
   authController: AuthController;
@@ -35,6 +49,9 @@ export interface Container {
   sduiController: SduiController;
   vendorController: VendorController;
   studentController: StudentController;
+  adminController: AdminController;
+  paymentController: PaymentController;
+  notificationController: NotificationController;
 }
 
 export function createContainer(prisma: PrismaClient): Container {
@@ -51,15 +68,31 @@ export function createContainer(prisma: PrismaClient): Container {
   const revenueService = new RevenueService(revenueRepository);
   const revenueController = new RevenueController(revenueService);
 
+  // Admin module (isolated)
+  const adminRepository = new AdminRepository(prisma);
+  const adminService = new AdminService(adminRepository);
+  const adminController = new AdminController(adminService);
+
+  // Notification module (isolated - created first since other modules need it)
+  const notificationRepository = new NotificationRepository(prisma);
+  const fcmService = env.FIREBASE_PROJECT_ID ? new FcmService() : new MockFcmService();
+  const notificationService = new NotificationService(notificationRepository, fcmService);
+  const notificationController = new NotificationController(notificationService);
+
+  // Payment module (isolated)
+  const paymentRepository = new PaymentRepository(prisma);
+  const paymentService = new PaymentService(paymentRepository, revenueService, notificationService);
+  const paymentController = new PaymentController(paymentService);
+
   // Services
   const authService = new AuthService(userRepository, vendorRepository, studentRepository);
-  const vendorService = new VendorService(menuItemRepository, orderRepository, revenueService);
-  const studentService = new StudentService(menuItemRepository, orderRepository, vendorRepository, revenueService);
+  const vendorService = new VendorService(menuItemRepository, orderRepository, revenueService, notificationService);
+  const studentService = new StudentService(menuItemRepository, orderRepository, vendorRepository, revenueService, notificationService);
 
   // Controllers
   const authController = new AuthController(authService);
   const sduiController = new SduiController(sduiLayoutRepository);
-  const vendorController = new VendorController(vendorService, orderRepository, revenueService);
+  const vendorController = new VendorController(vendorService, orderRepository, revenueService, vendorRepository);
   const studentController = new StudentController(studentService, menuItemRepository, vendorRepository);
 
   return {
@@ -73,10 +106,16 @@ export function createContainer(prisma: PrismaClient): Container {
     revenueService,
     vendorService,
     studentService,
+    adminService,
+    paymentService,
+    notificationService,
     authController,
     revenueController,
     sduiController,
     vendorController,
     studentController,
+    adminController,
+    paymentController,
+    notificationController,
   };
 }

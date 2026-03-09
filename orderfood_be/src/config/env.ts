@@ -13,6 +13,11 @@ const envSchema = z.object({
   MAX_FILE_SIZE_MB: z.coerce.number().default(5),
   CORS_ORIGIN: z.string().default('*'),
   POLLING_INTERVAL_MS: z.coerce.number().default(15000),
+  DEFAULT_UPI_ID: z.string().default('orderfood@upi'),
+  PAYMENT_EXPIRY_MINUTES: z.coerce.number().default(15),
+  FIREBASE_PROJECT_ID: z.string().optional(),
+  FIREBASE_PRIVATE_KEY: z.string().optional(),
+  FIREBASE_CLIENT_EMAIL: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

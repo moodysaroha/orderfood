@@ -94,22 +94,27 @@ Widget buildStatsRow(SduiComponent c, SduiWidgetFactory f) {
 }
 
 Widget buildStatCard(SduiComponent c, SduiWidgetFactory f) {
-  return Card(
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(_resolveIcon(c.prop('icon') ?? 'info'), size: 28, color: Colors.deepOrange),
-          const SizedBox(height: 8),
-          Text(c.prop('value') ?? '0',
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Text(c.prop('label') ?? '',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-        ],
-      ),
-    ),
+  return Builder(
+    builder: (context) {
+      final primaryColor = Theme.of(context).colorScheme.primary;
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(_resolveIcon(c.prop('icon') ?? 'info'), size: 28, color: primaryColor),
+              const SizedBox(height: 8),
+              Text(c.prop('value') ?? '0',
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text(c.prop('label') ?? '',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+            ],
+          ),
+        ),
+      );
+    },
   );
 }
 
@@ -210,8 +215,10 @@ Widget buildMenuItemCard(SduiComponent c, SduiWidgetFactory f) {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(c.prop('price') ?? '',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.deepOrange)),
+                  Builder(
+                    builder: (context) => Text(c.prop('price') ?? '',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+                  ),
                   ElevatedButton.icon(
                     onPressed: () => f.triggerAction('addToCart', context: {'id': c.prop('id')}),
                     icon: const Icon(Icons.add, size: 18),
@@ -300,7 +307,6 @@ Widget _statusChip(String status) {
     case 'CONFIRMED':  color = Colors.blue;   break;
     case 'PREPARING':  color = Colors.purple;  break;
     case 'READY':      color = Colors.green;   break;
-    case 'DELIVERED':  color = Colors.grey;    break;
     case 'CANCELLED':  color = Colors.red;     break;
     default:           color = Colors.grey;    break;
   }
@@ -334,10 +340,17 @@ IconData _resolveIcon(String name) {
     'favorite': Icons.favorite,
     'home': Icons.home,
     'list': Icons.list,
+    'list_alt': Icons.list_alt,
     'check': Icons.check,
     'close': Icons.close,
     'arrow_back': Icons.arrow_back,
     'arrow_forward': Icons.arrow_forward,
+    'store': Icons.store,
+    'school': Icons.school,
+    'today': Icons.today,
+    'dashboard': Icons.dashboard,
+    'logout': Icons.logout,
+    'receipt': Icons.receipt,
   };
   return iconMap[name] ?? Icons.help_outline;
 }

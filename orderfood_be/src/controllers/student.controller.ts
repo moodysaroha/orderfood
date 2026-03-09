@@ -22,6 +22,15 @@ export class StudentController {
     this.menuScreenBuilder = new StudentMenuScreenBuilder();
   }
 
+  getVendors = async (_req: Request, res: Response<ApiResponse>, next: NextFunction): Promise<void> => {
+    try {
+      const vendors = await this.vendorRepo.findAllWithMenuCount();
+      res.json({ success: true, data: vendors });
+    } catch (err) {
+      next(err);
+    }
+  };
+
   getMenu = async (req: Request, res: Response<ApiResponse>, next: NextFunction): Promise<void> => {
     try {
       const vendorId = param(req, 'vendorId');
@@ -40,10 +49,14 @@ export class StudentController {
   placeOrder = async (req: Request, res: Response<ApiResponse>, next: NextFunction): Promise<void> => {
     try {
       const studentId = req.user?.studentId;
+      const studentName = req.user?.studentName;
+      const studentUserId = req.user?.userId;
       if (!studentId) throw new AppError(403, 'Student access required');
 
       const order = await this.studentService.placeOrder({
         studentId,
+        studentName: studentName || 'Student',
+        studentUserId: studentUserId || '',
         vendorId: req.body.vendorId,
         items: req.body.items,
       });

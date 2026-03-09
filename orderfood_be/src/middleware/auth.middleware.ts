@@ -34,7 +34,15 @@ export async function authenticate(
       const student = await prisma.student.findUnique({
         where: { userId: decoded.userId },
       });
-      if (student) user.studentId = student.id;
+      if (student) {
+        user.studentId = student.id;
+        user.studentName = student.name;
+      }
+    } else if (decoded.role === Role.ADMIN) {
+      const admin = await prisma.admin.findUnique({
+        where: { userId: decoded.userId },
+      });
+      if (admin) user.adminId = admin.id;
     }
 
     req.user = user;

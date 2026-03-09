@@ -1,6 +1,6 @@
 ---
 name: OrderFood SDUI App
-overview: "Build a full-stack food ordering system with a Node.js/TypeScript backend (PostgreSQL, local image storage, polling-based SDUI) and a Flutter Android app for two roles: restaurant vendors (manage menu, view dashboard) and students (browse menu, place orders). Revenue is tracked in the DB (INR) and fully isolated as a separate module for future payment/commission extensions. Backend will be fully developed and tested; Flutter code will be written but not compiled."
+overview: "Build a full-stack food ordering system with a Node.js/TypeScript backend (PostgreSQL, local image storage, polling-based SDUI) and a Flutter Android app for three roles: restaurant vendors (manage menu, view dashboard), students (browse menu, place orders), and admin (platform management). Revenue is tracked in the DB (INR) and fully isolated as a separate module for future payment/commission extensions. Backend will be fully developed and tested; Flutter code will be written but not compiled."
 todos:
   - id: backend-foundation
     content: "Phase 1: Backend foundation - orderfood_be/ Express + TypeScript + Prisma + PostgreSQL setup, project scaffolding, auth middleware, JWT, currency utils, seed data"
@@ -15,13 +15,19 @@ todos:
     content: "Phase 4: Vendor features - Menu CRUD (prices in paise), image upload, availability toggle, dashboard SDUI pulling real revenue data, order listing"
     status: completed
   - id: student-features
-    content: "Phase 5: Student features - Student menu SDUI endpoint, order placement (triggers revenueService.recordRevenue), order history"
+    content: "Phase 5: Student features - Student menu SDUI endpoint, order placement (triggers revenueService.recordRevenue on READY), order history"
     status: completed
   - id: backend-testing
     content: "Phase 6: Backend testing - Jest + Supertest for auth, menu, orders, revenue recording/aggregation, SDUI, image uploads"
     status: completed
   - id: flutter-app
     content: "Phase 7: Flutter app - SDUI engine, Dio client, Riverpod, vendor/student screens, isolated revenue feature module, currency utils, navigation"
+    status: completed
+  - id: admin-module
+    content: "Phase 8: Admin module - ADMIN role in schema, admin dashboard SDUI, manage vendors/students/orders, platform stats"
+    status: completed
+  - id: ui-enhancements
+    content: "Phase 9: UI enhancements - Purple theme, light/dark mode, logout buttons for all roles, remove DELIVERED status (pickup model)"
     status: completed
 isProject: false
 ---
@@ -126,11 +132,12 @@ The SDUI engine on Flutter uses a **Component Registry** (Factory Pattern) to ma
 **Core Tables:**
 
 ```
-User         -> id, email, passwordHash, role (VENDOR|STUDENT), createdAt
+User         -> id, email, passwordHash, role (VENDOR|STUDENT|ADMIN), createdAt
 Vendor       -> id, userId (FK), restaurantName, description, createdAt
 Student      -> id, userId (FK), name, createdAt
+Admin        -> id, userId (FK), name, createdAt
 MenuItem     -> id, vendorId (FK), name, description, priceInPaise (Int), imageUrl, isAvailable, category, sortOrder, createdAt, updatedAt
-Order        -> id, studentId (FK), vendorId (FK), status (PENDING|CONFIRMED|PREPARING|READY|DELIVERED|CANCELLED), totalAmountInPaise (Int), createdAt, updatedAt
+Order        -> id, studentId (FK), vendorId (FK), status (PENDING|CONFIRMED|PREPARING|READY|CANCELLED), totalAmountInPaise (Int), createdAt, updatedAt
 OrderItem    -> id, orderId (FK), menuItemId (FK), quantity, priceAtOrderInPaise (Int)
 SduiLayout   -> id, screenName, role, layoutJson, version, updatedAt
 ```
@@ -313,7 +320,7 @@ graph LR
 
 **How it works now:**
 
-- When an order is marked DELIVERED, `OrderService` calls `revenueService.recordRevenue(order)` -- this creates a `RevenueEntry` row (commission = 0, net = gross) and upserts the daily `RevenueSummary`.
+- When an order is marked READY (final status for pickup), `OrderService` calls `revenueService.recordRevenue(order)` -- this creates a `RevenueEntry` row (commission = 0, net = gross) and upserts the daily `RevenueSummary`.
 - Dashboard SDUI builder calls `revenueService.getTodaySummary(vendorId)` and `revenueService.getOverallSummary(vendorId)` to fill in the stat cards with real data.
 
 **How it extends later:**

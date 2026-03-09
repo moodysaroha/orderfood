@@ -71,7 +71,7 @@ class _VendorOrdersScreenState extends ConsumerState<VendorOrdersScreen> {
                             trailing: PopupMenuButton<String>(
                               onSelected: (s) => _updateStatus(order['id'], s),
                               itemBuilder: (_) => [
-                                'CONFIRMED', 'PREPARING', 'READY', 'DELIVERED', 'CANCELLED',
+                                'CONFIRMED', 'PREPARING', 'READY', 'CANCELLED',
                               ].map((s) => PopupMenuItem(value: s, child: Text(s))).toList(),
                             ),
                           ),

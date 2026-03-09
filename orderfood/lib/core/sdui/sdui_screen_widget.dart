@@ -11,12 +11,14 @@ class SduiScreenWidget extends ConsumerStatefulWidget {
   final Future<Map<String, dynamic>> Function() fetchScreen;
   final void Function(SduiAction action, Map<String, dynamic>? context)? onAction;
   final String? title;
+  final bool showAppBar;
 
   const SduiScreenWidget({
     super.key,
     required this.fetchScreen,
     this.onAction,
     this.title,
+    this.showAppBar = true,
   });
 
   @override
@@ -71,6 +73,9 @@ class _SduiScreenWidgetState extends ConsumerState<SduiScreenWidget> {
   @override
   Widget build(BuildContext context) {
     if (_loading && _screen == null) {
+      if (!widget.showAppBar) {
+        return const Center(child: CircularProgressIndicator());
+      }
       return Scaffold(
         appBar: widget.title != null ? AppBar(title: Text(widget.title!)) : null,
         body: const Center(child: CircularProgressIndicator()),
@@ -78,20 +83,24 @@ class _SduiScreenWidgetState extends ConsumerState<SduiScreenWidget> {
     }
 
     if (_error != null && _screen == null) {
+      final errorBody = Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            const SizedBox(height: 16),
+            Text(_error!, textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            ElevatedButton(onPressed: _loadScreen, child: const Text('Retry')),
+          ],
+        ),
+      );
+      if (!widget.showAppBar) {
+        return errorBody;
+      }
       return Scaffold(
         appBar: widget.title != null ? AppBar(title: Text(widget.title!)) : null,
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
-              const SizedBox(height: 16),
-              Text(_error!, textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              ElevatedButton(onPressed: _loadScreen, child: const Text('Retry')),
-            ],
-          ),
-        ),
+        body: errorBody,
       );
     }
 
@@ -112,6 +121,17 @@ class _SduiScreenWidgetState extends ConsumerState<SduiScreenWidget> {
         .where((c) => c.type == 'fab')
         .firstOrNull;
 
+    final body = RefreshIndicator(
+      onRefresh: _loadScreen,
+      child: ListView(
+        children: bodyComponents.map((c) => factory.build(c)).toList(),
+      ),
+    );
+
+    if (!widget.showAppBar) {
+      return body;
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(appBarComponent?.prop('title') ?? widget.title ?? screen.screen),
@@ -119,12 +139,7 @@ class _SduiScreenWidgetState extends ConsumerState<SduiScreenWidget> {
             ?.map((c) => factory.build(c))
             .toList(),
       ),
-      body: RefreshIndicator(
-        onRefresh: _loadScreen,
-        child: ListView(
-          children: bodyComponents.map((c) => factory.build(c)).toList(),
-        ),
-      ),
+      body: body,
       floatingActionButton: fabComponent != null
           ? FloatingActionButton(
               onPressed: () => factory.triggerAction(fabComponent.prop('actionKey') ?? ''),

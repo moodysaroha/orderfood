@@ -12,11 +12,28 @@ async function main() {
   await prisma.order.deleteMany();
   await prisma.menuItem.deleteMany();
   await prisma.sduiLayout.deleteMany();
+  await prisma.admin.deleteMany();
   await prisma.vendor.deleteMany();
   await prisma.student.deleteMany();
   await prisma.user.deleteMany();
 
   const passwordHash = await bcrypt.hash('password123', 12);
+
+  // Admin user
+  const adminUser = await prisma.user.create({
+    data: {
+      email: 'admin@orderfood.com',
+      passwordHash,
+      role: Role.ADMIN,
+    },
+  });
+
+  await prisma.admin.create({
+    data: {
+      userId: adminUser.id,
+      name: 'Platform Admin',
+    },
+  });
 
   // Vendor user
   const vendorUser = await prisma.user.create({
@@ -90,12 +107,12 @@ async function main() {
     }),
   ]);
 
-  // Sample orders
+  // Sample orders (READY is the final status - students pick up from restaurant)
   const order1 = await prisma.order.create({
     data: {
       studentId: student1.id,
       vendorId: vendor.id,
-      status: OrderStatus.DELIVERED,
+      status: OrderStatus.READY,
       totalAmountInPaise: 27000,
       items: {
         create: [
@@ -110,7 +127,7 @@ async function main() {
     data: {
       studentId: student2.id,
       vendorId: vendor.id,
-      status: OrderStatus.DELIVERED,
+      status: OrderStatus.READY,
       totalAmountInPaise: 24000,
       items: {
         create: [
@@ -165,11 +182,12 @@ async function main() {
   });
 
   console.log('Seed complete!');
+  console.log(`  Admin: admin@orderfood.com / password123`);
   console.log(`  Vendor: vendor@orderfood.com / password123`);
   console.log(`  Student 1: rahul@student.com / password123`);
   console.log(`  Student 2: priya@student.com / password123`);
   console.log(`  Menu items: ${menuItems.length}`);
-  console.log(`  Orders: 3 (2 delivered, 1 pending)`);
+  console.log(`  Orders: 3 (2 ready, 1 pending)`);
 }
 
 main()

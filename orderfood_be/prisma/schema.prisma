@@ -10,6 +10,7 @@ datasource db {
 enum Role {
   VENDOR
   STUDENT
+  ADMIN
 }
 
 enum OrderStatus {
@@ -17,8 +18,14 @@ enum OrderStatus {
   CONFIRMED
   PREPARING
   READY
-  DELIVERED
   CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
 }
 
 model User {
@@ -29,6 +36,17 @@ model User {
   createdAt    DateTime @default(now())
   vendor       Vendor?
   student      Student?
+  admin        Admin?
+  devices      DeviceToken[]
+  notifications Notification[]
+}
+
+model Admin {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  name      String
+  createdAt DateTime @default(now())
 }
 
 model Vendor {
@@ -70,17 +88,36 @@ model MenuItem {
 }
 
 model Order {
-  id                 String       @id @default(uuid())
+  id                 String        @id @default(uuid())
   studentId          String
-  student            Student      @relation(fields: [studentId], references: [id])
+  student            Student       @relation(fields: [studentId], references: [id])
   vendorId           String
-  vendor             Vendor       @relation(fields: [vendorId], references: [id])
-  status             OrderStatus  @default(PENDING)
+  vendor             Vendor        @relation(fields: [vendorId], references: [id])
+  status             OrderStatus   @default(PENDING)
+  paymentStatus      PaymentStatus @default(PENDING)
   totalAmountInPaise Int
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
   items              OrderItem[]
   revenueEntry       RevenueEntry?
+  payment            Payment?
+}
+
+// --- Payment Module (isolated) ---
+
+model Payment {
+  id              String        @id @default(uuid())
+  orderId         String        @unique
+  order           Order         @relation(fields: [orderId], references: [id])
+  amountInPaise   Int
+  status          PaymentStatus @default(PENDING)
+  qrCodeData      String
+  upiId           String?
+  transactionId   String?
+  paidAt          DateTime?
+  expiresAt       DateTime
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 }
 
 model OrderItem {
@@ -132,4 +169,48 @@ model RevenueSummary {
   updatedAt              DateTime @updatedAt
 
   @@unique([vendorId, date])
+}
+
+// --- Notification Module (isolated) ---
+
+enum NotificationType {
+  ORDER_PLACED
+  ORDER_CONFIRMED
+  ORDER_PREPARING
+  ORDER_READY
+  ORDER_CANCELLED
+  ITEM_OUT_OF_STOCK
+  ITEM_BACK_IN_STOCK
+  PAYMENT_RECEIVED
+  PAYMENT_FAILED
+  GENERAL
+}
+
+model DeviceToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String
+  platform  String   @default("android")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, token])
+  @@index([userId])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  body      String
+  data      Json?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
 }

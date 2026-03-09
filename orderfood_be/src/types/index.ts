@@ -1,4 +1,5 @@
 import { Role } from '@prisma/client';
+import { Request } from 'express';
 
 export interface JwtPayload {
   userId: string;
@@ -10,6 +11,12 @@ export interface AuthenticatedUser {
   role: Role;
   vendorId?: string;
   studentId?: string;
+  studentName?: string;
+  adminId?: string;
+}
+
+export interface AuthenticatedRequest extends Request {
+  user?: AuthenticatedUser;
 }
 
 export interface PaginationParams {

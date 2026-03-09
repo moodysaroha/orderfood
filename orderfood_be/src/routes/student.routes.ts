@@ -16,6 +16,9 @@ const placeOrderSchema = z.object({
 export function createStudentRoutes(controller: StudentController): Router {
   const router = Router();
 
+  // Vendor browsing
+  router.get('/vendors', authenticate, controller.getVendors);
+
   // Menu browsing (SDUI) -- authenticated students
   router.get('/menu/:vendorId', authenticate, controller.getMenu);
 

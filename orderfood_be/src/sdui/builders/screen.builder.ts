@@ -36,11 +36,12 @@ export class ScreenBuilder {
     return this;
   }
 
-  addAppBar(title: string, actions?: SduiComponent[]): this {
+  addAppBar(title: string, showBack?: boolean | SduiComponent[], actions?: SduiComponent[]): this {
+    const isArray = Array.isArray(showBack);
     this.components.push({
       type: COMPONENT_TYPES.appBar,
-      props: { title },
-      children: actions,
+      props: { title, showBack: isArray ? false : showBack },
+      children: isArray ? showBack : actions,
     });
     return this;
   }
