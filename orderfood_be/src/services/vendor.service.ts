@@ -10,7 +10,7 @@ interface CreateMenuItemInput {
   vendorId: string;
   name: string;
   description?: string;
-  priceInRupees: number;
+  priceInPaise: number;
   category?: string;
   sortOrder?: number;
 }
@@ -18,7 +18,7 @@ interface CreateMenuItemInput {
 interface UpdateMenuItemInput {
   name?: string;
   description?: string;
-  priceInRupees?: number;
+  priceInPaise?: number;
   category?: string;
   sortOrder?: number;
 }
@@ -51,7 +51,7 @@ export class VendorService implements IVendorService {
       vendorId: input.vendorId,
       name: input.name,
       description: input.description,
-      priceInPaise: rupeesToPaise(input.priceInRupees),
+      priceInPaise: input.priceInPaise,
       category: input.category,
       sortOrder: input.sortOrder,
     });
@@ -66,7 +66,7 @@ export class VendorService implements IVendorService {
     const updateData: Record<string, unknown> = {};
     if (input.name !== undefined) updateData.name = input.name;
     if (input.description !== undefined) updateData.description = input.description;
-    if (input.priceInRupees !== undefined) updateData.priceInPaise = rupeesToPaise(input.priceInRupees);
+    if (input.priceInPaise !== undefined) updateData.priceInPaise = input.priceInPaise;
     if (input.category !== undefined) updateData.category = input.category;
     if (input.sortOrder !== undefined) updateData.sortOrder = input.sortOrder;
 

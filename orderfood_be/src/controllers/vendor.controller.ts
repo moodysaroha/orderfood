@@ -54,6 +54,18 @@ export class VendorController {
     }
   };
 
+  getMenuItems = async (req: Request, res: Response<ApiResponse>, next: NextFunction): Promise<void> => {
+    try {
+      const vendorId = req.user?.vendorId;
+      if (!vendorId) throw new AppError(403, 'Vendor access required');
+
+      const items = await this.vendorService.getMenuItems(vendorId);
+      res.json({ success: true, data: items });
+    } catch (err) {
+      next(err);
+    }
+  };
+
   createMenuItem = async (req: Request, res: Response<ApiResponse>, next: NextFunction): Promise<void> => {
     try {
       const vendorId = req.user?.vendorId;
@@ -63,7 +75,7 @@ export class VendorController {
         vendorId,
         name: req.body.name,
         description: req.body.description,
-        priceInRupees: req.body.price,
+        priceInPaise: req.body.priceInPaise,
         category: req.body.category,
         sortOrder: req.body.sortOrder,
       });
@@ -81,7 +93,7 @@ export class VendorController {
       const item = await this.vendorService.updateMenuItem(vendorId, paramId(req), {
         name: req.body.name,
         description: req.body.description,
-        priceInRupees: req.body.price,
+        priceInPaise: req.body.priceInPaise,
         category: req.body.category,
         sortOrder: req.body.sortOrder,
       });
