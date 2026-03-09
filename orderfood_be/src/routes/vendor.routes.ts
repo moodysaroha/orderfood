@@ -31,7 +31,7 @@ const upload = multer({
 const createItemSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().max(500).optional(),
-  price: z.coerce.number().positive(),
+  priceInPaise: z.coerce.number().int().positive(),
   category: z.string().max(50).optional(),
   sortOrder: z.coerce.number().int().optional(),
 });
@@ -39,7 +39,7 @@ const createItemSchema = z.object({
 const updateItemSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   description: z.string().max(500).optional(),
-  price: z.coerce.number().positive().optional(),
+  priceInPaise: z.coerce.number().int().positive().optional(),
   category: z.string().max(50).optional(),
   sortOrder: z.coerce.number().int().optional(),
 });
@@ -56,6 +56,7 @@ export function createVendorRoutes(controller: VendorController): Router {
 
   router.get('/dashboard', controller.getDashboard);
   router.get('/menu', controller.getMenu);
+  router.get('/menu/items', controller.getMenuItems);
   router.post('/menu/items', validate(createItemSchema), controller.createMenuItem);
   router.put('/menu/items/:id', validate(updateItemSchema), controller.updateMenuItem);
   router.patch('/menu/items/:id/availability', controller.toggleAvailability);
