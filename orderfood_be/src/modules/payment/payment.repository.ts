@@ -5,6 +5,8 @@ export interface IPaymentRepository {
   create(data: {
     orderId: string;
     amountInPaise: number;
+    commissionInPaise?: number;
+    vendorAmountInPaise?: number;
     qrCodeData: string;
     upiId?: string;
     expiresAt: Date;
@@ -22,11 +24,23 @@ export class PaymentRepository implements IPaymentRepository {
   async create(data: {
     orderId: string;
     amountInPaise: number;
+    commissionInPaise?: number;
+    vendorAmountInPaise?: number;
     qrCodeData: string;
     upiId?: string;
     expiresAt: Date;
   }): Promise<Payment> {
-    return this.prisma.payment.create({ data });
+    return this.prisma.payment.create({ 
+      data: {
+        orderId: data.orderId,
+        amountInPaise: data.amountInPaise,
+        commissionInPaise: data.commissionInPaise ?? 0,
+        vendorAmountInPaise: data.vendorAmountInPaise ?? data.amountInPaise,
+        qrCodeData: data.qrCodeData,
+        upiId: data.upiId,
+        expiresAt: data.expiresAt,
+      },
+    });
   }
 
   async findById(id: string): Promise<Payment | null> {
@@ -43,7 +57,7 @@ export class PaymentRepository implements IPaymentRepository {
       include: {
         order: {
           include: {
-            vendor: { select: { restaurantName: true, userId: true } },
+            vendor: { select: { id: true, restaurantName: true, userId: true } },
             student: { select: { name: true, userId: true } },
             items: true,
           },
@@ -57,6 +71,8 @@ export class PaymentRepository implements IPaymentRepository {
       id: payment.id,
       orderId: payment.orderId,
       amountInPaise: payment.amountInPaise,
+      commissionInPaise: payment.commissionInPaise,
+      vendorAmountInPaise: payment.vendorAmountInPaise,
       status: payment.status,
       qrCodeData: payment.qrCodeData,
       upiId: payment.upiId,

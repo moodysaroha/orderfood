@@ -23,6 +23,12 @@ import {
   MockFcmService,
   INotificationService,
 } from './modules/notification';
+import {
+  CommissionRepository,
+  CommissionService,
+  CommissionController,
+  ICommissionService,
+} from './modules/commission';
 import { env } from './config/env';
 
 export interface Container {
@@ -42,6 +48,7 @@ export interface Container {
   adminService: AdminService;
   paymentService: PaymentService;
   notificationService: INotificationService;
+  commissionService: ICommissionService;
 
   // Controllers
   authController: AuthController;
@@ -52,6 +59,7 @@ export interface Container {
   adminController: AdminController;
   paymentController: PaymentController;
   notificationController: NotificationController;
+  commissionController: CommissionController;
 }
 
 export function createContainer(prisma: PrismaClient): Container {
@@ -79,9 +87,14 @@ export function createContainer(prisma: PrismaClient): Container {
   const notificationService = new NotificationService(notificationRepository, fcmService);
   const notificationController = new NotificationController(notificationService);
 
+  // Commission module (isolated - created before Payment since Payment depends on it)
+  const commissionRepository = new CommissionRepository(prisma);
+  const commissionService = new CommissionService(commissionRepository);
+  const commissionController = new CommissionController(commissionService);
+
   // Payment module (isolated)
   const paymentRepository = new PaymentRepository(prisma);
-  const paymentService = new PaymentService(paymentRepository, revenueService, notificationService);
+  const paymentService = new PaymentService(paymentRepository, revenueService, notificationService, commissionService);
   const paymentController = new PaymentController(paymentService);
 
   // Services
@@ -109,6 +122,7 @@ export function createContainer(prisma: PrismaClient): Container {
     adminService,
     paymentService,
     notificationService,
+    commissionService,
     authController,
     revenueController,
     sduiController,
@@ -117,5 +131,6 @@ export function createContainer(prisma: PrismaClient): Container {
     adminController,
     paymentController,
     notificationController,
+    commissionController,
   };
 }

@@ -8,6 +8,7 @@ import { createRevenueRoutes } from '../modules/revenue';
 import { createAdminRoutes } from '../modules/admin';
 import { createPaymentRoutes } from '../modules/payment';
 import { createNotificationRoutes } from '../modules/notification';
+import { createCommissionRoutes } from '../modules/commission';
 
 export function createRouter(container: Container): Router {
   const router = Router();
@@ -20,6 +21,7 @@ export function createRouter(container: Container): Router {
   router.use('/admin', createAdminRoutes(container.adminController));
   router.use('/payment', createPaymentRoutes(container.paymentController));
   router.use('/notifications', createNotificationRoutes(container.notificationController));
+  router.use('/commission', createCommissionRoutes(container.commissionController));
 
   return router;
 }

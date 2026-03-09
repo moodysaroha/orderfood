@@ -2,6 +2,7 @@ import { PaymentStatus } from '@prisma/client';
 import { IPaymentRepository } from './payment.repository';
 import { IRevenueService } from '../revenue';
 import { INotificationService } from '../notification';
+import { ICommissionService } from '../commission';
 import {
   CreatePaymentInput,
   QrPaymentData,
@@ -25,6 +26,7 @@ export class PaymentService implements IPaymentService {
     private paymentRepo: IPaymentRepository,
     private revenueService?: IRevenueService,
     private notificationService?: INotificationService,
+    private commissionService?: ICommissionService,
   ) {}
 
   async createPayment(input: CreatePaymentInput): Promise<QrPaymentData> {
@@ -38,15 +40,31 @@ export class PaymentService implements IPaymentService {
       }
     }
 
-    const upiId = input.vendorUpiId || env.DEFAULT_UPI_ID;
+    let upiId = env.DEFAULT_UPI_ID;
+    let platformName = 'OrderFood';
+    let commissionInPaise = 0;
+    let vendorAmountInPaise = input.amountInPaise;
+
+    if (this.commissionService) {
+      const config = await this.commissionService.getConfig();
+      upiId = config.platformUpiId;
+      platformName = config.platformName;
+      
+      const calculation = await this.commissionService.calculateCommission(input.amountInPaise);
+      commissionInPaise = calculation.commissionInPaise;
+      vendorAmountInPaise = calculation.vendorAmountInPaise;
+    }
+
     const amountInRupees = paiseToRupees(input.amountInPaise);
     const expiresAt = new Date(Date.now() + env.PAYMENT_EXPIRY_MINUTES * 60 * 1000);
 
-    const qrCodeData = this.generateUpiQrData(upiId, amountInRupees, input.orderId);
+    const qrCodeData = this.generateUpiQrData(upiId, amountInRupees, input.orderId, platformName);
 
     const payment = await this.paymentRepo.create({
       orderId: input.orderId,
       amountInPaise: input.amountInPaise,
+      commissionInPaise,
+      vendorAmountInPaise,
       qrCodeData,
       upiId,
       expiresAt,
@@ -103,6 +121,14 @@ export class PaymentService implements IPaymentService {
     await this.paymentRepo.updateStatus(input.paymentId, PaymentStatus.COMPLETED, input.transactionId);
     await this.paymentRepo.updateOrderPaymentStatus(payment.orderId, PaymentStatus.COMPLETED);
 
+    if (this.commissionService && payment.order) {
+      const vendorId = (payment.order as any).vendor?.id;
+      const vendorAmountInPaise = payment.vendorAmountInPaise ?? payment.amountInPaise;
+      if (vendorId && vendorAmountInPaise > 0) {
+        await this.commissionService.recordPaymentForVendor(vendorId, vendorAmountInPaise);
+      }
+    }
+
     const confirmedPayment = await this.paymentRepo.findByIdWithOrder(input.paymentId) as PaymentWithOrder;
 
     if (this.notificationService && confirmedPayment.order) {
@@ -133,10 +159,10 @@ export class PaymentService implements IPaymentService {
     return { status: payment.status, isExpired };
   }
 
-  private generateUpiQrData(upiId: string, amount: number, orderId: string): string {
+  private generateUpiQrData(upiId: string, amount: number, orderId: string, platformName: string = 'OrderFood'): string {
     const params = new URLSearchParams({
       pa: upiId,
-      pn: 'OrderFood',
+      pn: platformName,
       am: amount.toFixed(2),
       cu: 'INR',
       tn: `Order ${orderId.slice(0, 8)}`,
