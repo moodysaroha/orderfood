@@ -10,6 +10,8 @@ export interface PaymentData {
   id: string;
   orderId: string;
   amountInPaise: number;
+  commissionInPaise?: number;
+  vendorAmountInPaise?: number;
   status: PaymentStatus;
   qrCodeData: string;
   upiId: string | null;
@@ -25,7 +27,7 @@ export interface PaymentWithOrder extends PaymentData {
     status: string;
     vendorName: string;
     studentName: string;
-    vendor?: { restaurantName: string; userId: string };
+    vendor?: { id?: string; restaurantName: string; userId: string };
     student?: { name: string; userId: string };
     items?: unknown[];
   };

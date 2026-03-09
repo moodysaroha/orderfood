@@ -7,11 +7,17 @@ async function main() {
   console.log('Seeding database...');
 
   await prisma.orderItem.deleteMany();
+  await prisma.payment.deleteMany();
   await prisma.revenueEntry.deleteMany();
   await prisma.revenueSummary.deleteMany();
+  await prisma.vendorSettlement.deleteMany();
+  await prisma.vendorBalance.deleteMany();
   await prisma.order.deleteMany();
   await prisma.menuItem.deleteMany();
   await prisma.sduiLayout.deleteMany();
+  await prisma.platformConfig.deleteMany();
+  await prisma.notification.deleteMany();
+  await prisma.deviceToken.deleteMany();
   await prisma.admin.deleteMany();
   await prisma.vendor.deleteMany();
   await prisma.student.deleteMany();
@@ -181,6 +187,16 @@ async function main() {
     },
   });
 
+  // Platform configuration (commission settings)
+  await prisma.platformConfig.createMany({
+    data: [
+      { key: 'commission_percentage', value: '10', description: 'Platform commission percentage (0-100)' },
+      { key: 'platform_upi_id', value: 'orderfood@upi', description: 'Platform UPI ID for receiving payments' },
+      { key: 'platform_name', value: 'OrderFood', description: 'Platform name shown in UPI' },
+      { key: 'min_settlement_amount', value: '50000', description: 'Minimum amount in paise for vendor settlement (₹500)' },
+    ],
+  });
+
   console.log('Seed complete!');
   console.log(`  Admin: admin@orderfood.com / password123`);
   console.log(`  Vendor: vendor@orderfood.com / password123`);
@@ -188,6 +204,7 @@ async function main() {
   console.log(`  Student 2: priya@student.com / password123`);
   console.log(`  Menu items: ${menuItems.length}`);
   console.log(`  Orders: 3 (2 ready, 1 pending)`);
+  console.log(`  Platform config: 10% commission, platform UPI: orderfood@upi`);
 }
 
 main()

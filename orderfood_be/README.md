@@ -229,6 +229,19 @@ All endpoints are prefixed with `/api`.
 | PATCH | `/:id/read` | Yes | Mark a notification as read |
 | PATCH | `/read-all` | Yes | Mark all notifications as read |
 
+### Commission (`/api/commission`)
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/config` | ADMIN | Get platform commission configuration |
+| PATCH | `/config` | ADMIN | Update commission settings |
+| GET | `/balances` | ADMIN | Get all vendor pending balances |
+| GET | `/balances/:vendorId` | ADMIN/VENDOR | Get specific vendor balance |
+| GET | `/settlements/pending` | ADMIN | Get all pending settlements |
+| GET | `/settlements/vendor/:vendorId` | ADMIN/VENDOR | Get vendor's settlement history |
+| POST | `/settlements` | ADMIN | Create a new settlement |
+| POST | `/settlements/:settlementId/process` | ADMIN | Mark settlement as paid |
+| POST | `/settlements/:settlementId/fail` | ADMIN | Mark settlement as failed |
+
 ### SDUI Admin (`/api/sdui`)
 | Method | Path | Description |
 |--------|------|-------------|
@@ -297,8 +310,40 @@ PENDING → CONFIRMED → PREPARING → READY → (student picks up)
 - **Admin module is fully isolated** in `src/modules/admin/` with its own controller, service, repository, routes, and types. Platform management stays contained here.
 - **Payment module is fully isolated** in `src/modules/payment/` with its own controller, service, repository, routes, and types. QR code UPI payments are handled here.
 - **Notification module is fully isolated** in `src/modules/notification/` with FCM integration, device token management, and notification history. Triggers are called from other services for order/stock/payment events.
+- **Commission module is fully isolated** in `src/modules/commission/` with platform config, vendor balances, and settlement tracking. Calculates commission on payments and tracks vendor payouts.
 - **All monetary values** are stored as integers in **paise** (1 INR = 100 paise) to avoid floating-point issues. Conversion helpers are in `src/utils/currency.ts`.
 - **SDUI** -- The server builds screen layouts as JSON using `ScreenBuilder`. The Flutter app parses and renders them. Screens can be redesigned from the backend without app updates.
+
+---
+
+## Commission & Settlement System
+
+The platform uses an escrow payment model where all student payments go to the platform, and vendors are paid out separately.
+
+### Payment Flow
+
+```
+Student pays → Platform UPI → Commission deducted → Vendor balance updated
+                                                          ↓
+                              Admin creates settlement → Vendor receives payout
+```
+
+### Configuration (stored in `PlatformConfig` table)
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `commission_percentage` | `10` | Percentage deducted from each order (0-100) |
+| `platform_upi_id` | `orderfood@upi` | UPI ID where students pay |
+| `platform_name` | `OrderFood` | Name shown in UPI payment apps |
+| `min_settlement_amount` | `50000` | Minimum paise for vendor payout (₹500) |
+
+### Settlement Workflow
+
+1. When payment is confirmed, vendor's pending balance increases (order total minus commission)
+2. Admin views vendor balances in `/commission/balances`
+3. Admin creates a settlement request for a vendor
+4. Admin pays vendor manually (bank transfer, UPI, etc.)
+5. Admin marks settlement as processed with transaction reference
 
 ---
 

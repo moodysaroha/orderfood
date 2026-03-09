@@ -60,6 +60,8 @@ model Vendor {
   orders           Order[]
   revenueEntries   RevenueEntry[]
   revenueSummaries RevenueSummary[]
+  balance          VendorBalance?
+  settlements      VendorSettlement[]
 }
 
 model Student {
@@ -106,18 +108,20 @@ model Order {
 // --- Payment Module (isolated) ---
 
 model Payment {
-  id              String        @id @default(uuid())
-  orderId         String        @unique
-  order           Order         @relation(fields: [orderId], references: [id])
-  amountInPaise   Int
-  status          PaymentStatus @default(PENDING)
-  qrCodeData      String
-  upiId           String?
-  transactionId   String?
-  paidAt          DateTime?
-  expiresAt       DateTime
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id                String        @id @default(uuid())
+  orderId           String        @unique
+  order             Order         @relation(fields: [orderId], references: [id])
+  amountInPaise     Int
+  commissionInPaise Int           @default(0)
+  vendorAmountInPaise Int         @default(0)
+  status            PaymentStatus @default(PENDING)
+  qrCodeData        String
+  upiId             String?
+  transactionId     String?
+  paidAt            DateTime?
+  expiresAt         DateTime
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 }
 
 model OrderItem {
@@ -169,6 +173,48 @@ model RevenueSummary {
   updatedAt              DateTime @updatedAt
 
   @@unique([vendorId, date])
+}
+
+// --- Commission/Escrow Module (isolated) ---
+
+model PlatformConfig {
+  id                    String   @id @default(uuid())
+  key                   String   @unique
+  value                 String
+  description           String?
+  updatedAt             DateTime @updatedAt
+}
+
+model VendorBalance {
+  id                    String   @id @default(uuid())
+  vendorId              String   @unique
+  vendor                Vendor   @relation(fields: [vendorId], references: [id])
+  pendingAmountInPaise  Int      @default(0)
+  settledAmountInPaise  Int      @default(0)
+  lastSettlementAt      DateTime?
+  updatedAt             DateTime @updatedAt
+}
+
+enum SettlementStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model VendorSettlement {
+  id              String           @id @default(uuid())
+  vendorId        String
+  vendor          Vendor           @relation(fields: [vendorId], references: [id])
+  amountInPaise   Int
+  status          SettlementStatus @default(PENDING)
+  referenceId     String?
+  notes           String?
+  processedAt     DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([vendorId, status])
 }
 
 // --- Notification Module (isolated) ---

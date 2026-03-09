@@ -72,12 +72,16 @@ The admin dashboard gives the platform owner/developer full visibility into the 
   - View all registered vendors with their stats
   - Delete vendors and their associated data
   - Bulk upload vendors with menu items via JSON
-- **Manage Students:**
-  - View all registered students with their order history
-  - Delete students and their associated data
-- **View All Orders:**
-  - See all orders across all vendors
-  - Filter orders by status
+- **Manage Settlements:**
+  - View vendor pending balances (earnings after commission)
+  - Create settlement requests for vendors
+  - Mark settlements as paid with transaction reference
+  - Track settlement history
+- **Configure Platform Settings:**
+  - Set commission percentage (0-100%)
+  - Set platform UPI ID (where students pay)
+  - Set platform name (shown in UPI apps)
+  - Set minimum settlement amount
 
 ---
 
@@ -88,7 +92,21 @@ All revenue tracking is based on **real order data** -- nothing is hardcoded or 
 - When a vendor marks an order as "Ready", the order total is automatically recorded as revenue
 - The dashboard shows live numbers pulled from the database
 - All prices are in **Indian Rupees (INR)**
-- The system is designed to support **future payment features** like QR code payments and platform commission, without needing to change how orders or menus work
+
+### Escrow Payment Model
+
+The app uses an escrow/marketplace payment system:
+
+1. **Student pays Platform** - QR code uses platform's UPI ID (configurable in admin settings)
+2. **Commission deducted** - Platform automatically calculates commission (configurable %)
+3. **Vendor balance updated** - Net amount (after commission) is added to vendor's pending balance
+4. **Admin settles with vendors** - Admin can create settlements and mark them as paid
+
+This model allows the platform to:
+- Earn commission on every transaction
+- Control all payment flow
+- Track vendor earnings and payouts
+- Maintain financial records
 
 ---
 
@@ -130,13 +148,7 @@ All prices and revenue figures are displayed in **Indian Rupees (INR)**. For exa
 
 The following features are planned for future releases:
 
-- **Platform Commission** -- A percentage-based commission system for the platform owner
-- **Push Notifications** -- Real-time alerts for order status changes
+- **Automated Settlements** -- Scheduled vendor payouts via bank transfer
 - **Order Analytics** -- Detailed analytics for vendors and admins
+- **Vendor Mobile App** -- Dedicated app for vendors with better order management
 
-## Admin Credentials
-
-After running the database seed, use these credentials to access the admin dashboard:
-
-- **Email:** admin@orderfood.com
-- **Password:** password123 
