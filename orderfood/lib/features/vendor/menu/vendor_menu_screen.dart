@@ -2,16 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/sdui/sdui_screen_widget.dart';
-import '../../../core/sdui/sdui_models.dart';
+import 'add_menu_item_screen.dart';
 
-class VendorMenuScreen extends ConsumerWidget {
+class VendorMenuScreen extends ConsumerStatefulWidget {
   const VendorMenuScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<VendorMenuScreen> createState() => _VendorMenuScreenState();
+}
+
+class _VendorMenuScreenState extends ConsumerState<VendorMenuScreen> {
+  int _refreshKey = 0;
+
+  void _refresh() => setState(() => _refreshKey++);
+
+  @override
+  Widget build(BuildContext context) {
     final api = ref.read(apiClientProvider);
 
     return SduiScreenWidget(
+      key: ValueKey(_refreshKey),
       title: 'Menu Management',
       fetchScreen: () async {
         final res = await api.get('/vendor/menu');
@@ -19,9 +29,12 @@ class VendorMenuScreen extends ConsumerWidget {
       },
       onAction: (action, ctx) async {
         if (action.type == 'navigate') {
-          Navigator.of(context).pushNamed(
-            action.route!.replaceAll(':id', ctx?['id'] ?? ''),
-          );
+          if (action.route == '/vendor/menu/add') {
+            final result = await Navigator.of(context).push<bool>(
+              MaterialPageRoute(builder: (_) => const AddMenuItemScreen()),
+            );
+            if (result == true) _refresh();
+          }
         } else if (action.type == 'api_call') {
           final url = action.url!.replaceAll(':id', ctx?['id'] ?? '');
           try {
@@ -44,7 +57,7 @@ class VendorMenuScreen extends ConsumerWidget {
               }
               await api.delete(url);
             }
-            // Trigger refresh by rebuilding
+            _refresh();
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Updated successfully')),
