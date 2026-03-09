@@ -10,6 +10,7 @@ datasource db {
 enum Role {
   VENDOR
   STUDENT
+  ADMIN
 }
 
 enum OrderStatus {
@@ -17,7 +18,6 @@ enum OrderStatus {
   CONFIRMED
   PREPARING
   READY
-  DELIVERED
   CANCELLED
 }
 
@@ -29,6 +29,15 @@ model User {
   createdAt    DateTime @default(now())
   vendor       Vendor?
   student      Student?
+  admin        Admin?
+}
+
+model Admin {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  name      String
+  createdAt DateTime @default(now())
 }
 
 model Vendor {

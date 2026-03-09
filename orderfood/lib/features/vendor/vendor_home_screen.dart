@@ -4,7 +4,9 @@ import 'menu/vendor_menu_screen.dart';
 import 'orders/vendor_orders_screen.dart';
 
 class VendorHomeScreen extends StatefulWidget {
-  const VendorHomeScreen({super.key});
+  final VoidCallback onLogout;
+
+  const VendorHomeScreen({super.key, required this.onLogout});
 
   @override
   State<VendorHomeScreen> createState() => _VendorHomeScreenState();
@@ -13,10 +15,10 @@ class VendorHomeScreen extends StatefulWidget {
 class _VendorHomeScreenState extends State<VendorHomeScreen> {
   int _currentIndex = 0;
 
-  final _screens = const [
-    VendorDashboardScreen(),
-    VendorMenuScreen(),
-    VendorOrdersScreen(),
+  late final List<Widget> _screens = [
+    VendorDashboardScreen(onLogout: widget.onLogout),
+    const VendorMenuScreen(),
+    const VendorOrdersScreen(),
   ];
 
   @override

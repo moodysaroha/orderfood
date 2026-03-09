@@ -2,6 +2,14 @@
 
 Node.js/TypeScript backend for the OrderFood campus food ordering system. Uses Express, Prisma ORM, PostgreSQL, and a custom SDUI (Server-Driven UI) engine.
 
+## Roles
+
+| Role | Description |
+|------|-------------|
+| **VENDOR** | Restaurant owner - manages menu, views orders, tracks revenue |
+| **STUDENT** | Customer - browses menu, places orders, tracks order status |
+| **ADMIN** | Platform owner - views platform stats, manages all vendors/students/orders |
+
 ---
 
 ## Prerequisites
@@ -79,10 +87,11 @@ npm run prisma:seed
 ```
 
 This creates:
+- **Admin:** `admin@orderfood.com` / `password123` (Platform Admin)
 - **Vendor:** `vendor@orderfood.com` / `password123` (Restaurant: Campus Bites)
 - **Student 1:** `rahul@student.com` / `password123`
 - **Student 2:** `priya@student.com` / `password123`
-- 6 menu items, 3 orders (2 delivered, 1 pending), and matching revenue entries
+- 6 menu items, 3 orders (2 ready, 1 pending), and matching revenue entries
 
 ### 7. Start the dev server
 
@@ -117,13 +126,14 @@ orderfood_be/
 │   ├── app.ts                    # Express app entry point
 │   ├── container.ts              # Dependency injection (composition root)
 │   ├── config/                   # Environment, database client
-│   ├── middleware/                # Auth (JWT), validation (Zod), error handler
+│   ├── middleware/               # Auth (JWT), validation (Zod), error handler
 │   ├── repositories/             # Data access layer (Prisma queries)
 │   ├── services/                 # Business logic
 │   ├── controllers/              # Route handlers (thin, delegate to services)
 │   ├── routes/                   # Express route definitions
 │   ├── modules/
-│   │   └── revenue/              # Isolated revenue module (own MVC stack)
+│   │   ├── revenue/              # Isolated revenue module (own MVC stack)
+│   │   └── admin/                # Isolated admin module (platform management)
 │   ├── sdui/
 │   │   ├── components/           # SDUI component type registry
 │   │   ├── builders/             # Screen-specific SDUI builders
@@ -132,7 +142,7 @@ orderfood_be/
 │   ├── types/                    # Shared TypeScript interfaces
 │   └── utils/                    # Currency helpers (paise/INR conversion)
 ├── prisma/
-│   ├── schema.prisma             # Database schema (12 models)
+│   ├── schema.prisma             # Database schema (13 models)
 │   └── seed.ts                   # Seed script
 ├── tests/                        # Jest + Supertest integration tests
 ├── uploads/                      # Local image storage
@@ -163,7 +173,7 @@ All endpoints are prefixed with `/api`.
 | POST | `/menu/items/:id/image` | Upload image (multipart/form-data) |
 | DELETE | `/menu/items/:id` | Delete menu item |
 | GET | `/orders` | List orders (filterable by status, date) |
-| PATCH | `/orders/:id/status` | Update order status (triggers revenue on DELIVERED) |
+| PATCH | `/orders/:id/status` | Update order status (triggers revenue on READY) |
 
 ### Student (`/api/student`)
 | Method | Path | Description |
@@ -180,6 +190,20 @@ All endpoints are prefixed with `/api`.
 | GET | `/overall` | Lifetime revenue since signup |
 | GET | `/summary?from=&to=` | Revenue for a date range |
 | GET | `/entries?page=&limit=` | Paginated per-order revenue breakdown |
+
+### Admin (`/api/admin`) -- Admin only
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/dashboard` | SDUI admin dashboard with platform stats |
+| GET | `/dashboard/vendors` | SDUI vendor management screen |
+| GET | `/dashboard/students` | SDUI student management screen |
+| GET | `/dashboard/orders` | SDUI all orders screen (filterable) |
+| GET | `/stats` | Platform statistics (JSON) |
+| GET | `/vendors` | List all vendors with stats |
+| GET | `/students` | List all students with stats |
+| GET | `/orders` | List all orders (filterable by status, vendorId) |
+| DELETE | `/vendors/:vendorId` | Delete vendor and all associated data |
+| DELETE | `/students/:studentId` | Delete student and all associated data |
 
 ### SDUI Admin (`/api/sdui`)
 | Method | Path | Description |
@@ -216,12 +240,29 @@ npm test
 
 ### Key test: Revenue integration
 
-The most important integration test is in `tests/student.test.ts` under *"Order delivery triggers revenue"*. It verifies the full flow:
+The most important integration test is in `tests/student.test.ts` under *"Order ready triggers revenue"*. It verifies the full flow:
 
 1. Student places an order
-2. Vendor marks order as DELIVERED
+2. Vendor marks order as READY
 3. Revenue module automatically records the entry
 4. `/api/revenue/today` reflects the new revenue
+
+---
+
+## Order Status Flow
+
+This is a **pickup-based** system (not delivery). Students come to the restaurant when their order is ready.
+
+```
+PENDING → CONFIRMED → PREPARING → READY → (student picks up)
+                              ↘ CANCELLED
+```
+
+- **PENDING**: Order placed, waiting for vendor confirmation
+- **CONFIRMED**: Vendor accepted the order
+- **PREPARING**: Kitchen is preparing the food
+- **READY**: Food is ready for pickup (revenue recorded at this point)
+- **CANCELLED**: Order was cancelled
 
 ---
 
@@ -229,5 +270,32 @@ The most important integration test is in `tests/student.test.ts` under *"Order 
 
 - **SOLID principles** -- Repository pattern, service layer, dependency injection via composition root (`container.ts`)
 - **Revenue module is fully isolated** in `src/modules/revenue/` with its own controller, service, repository, routes, and types. Other modules interact with it only through `IRevenueService`. Future payment/commission features go here.
+- **Admin module is fully isolated** in `src/modules/admin/` with its own controller, service, repository, routes, and types. Platform management stays contained here.
 - **All monetary values** are stored as integers in **paise** (1 INR = 100 paise) to avoid floating-point issues. Conversion helpers are in `src/utils/currency.ts`.
 - **SDUI** -- The server builds screen layouts as JSON using `ScreenBuilder`. The Flutter app parses and renders them. Screens can be redesigned from the backend without app updates.
+
+---
+
+## Database Commands Reference
+
+After modifying `prisma/schema.prisma`:
+
+```bash
+# 1. Generate new Prisma client (required after any schema change)
+npm run prisma:generate
+
+# 2. Create and apply migration (for structural changes)
+npx prisma migrate dev --name describe_your_change
+
+# 3. Re-seed if you want fresh test data
+npm run prisma:seed
+```
+
+**For the ADMIN role addition specifically:**
+
+```bash
+# Since schema already has ADMIN role and Admin model, just run:
+npm run prisma:generate          # Regenerate Prisma client
+npx prisma migrate dev --name add_admin_role   # Create migration
+npm run prisma:seed              # Seed includes admin user now
+```

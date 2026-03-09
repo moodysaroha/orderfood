@@ -10,6 +10,7 @@ export interface AuthenticatedUser {
   role: Role;
   vendorId?: string;
   studentId?: string;
+  adminId?: string;
 }
 
 export interface PaginationParams {

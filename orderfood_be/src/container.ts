@@ -13,6 +13,7 @@ import { StudentController } from './controllers/student.controller';
 import { VendorService } from './services/vendor.service';
 import { StudentService } from './services/student.service';
 import { RevenueRepository, RevenueService, RevenueController } from './modules/revenue';
+import { AdminRepository, AdminService, AdminController } from './modules/admin';
 
 export interface Container {
   // Repositories
@@ -28,6 +29,7 @@ export interface Container {
   revenueService: RevenueService;
   vendorService: VendorService;
   studentService: StudentService;
+  adminService: AdminService;
 
   // Controllers
   authController: AuthController;
@@ -35,6 +37,7 @@ export interface Container {
   sduiController: SduiController;
   vendorController: VendorController;
   studentController: StudentController;
+  adminController: AdminController;
 }
 
 export function createContainer(prisma: PrismaClient): Container {
@@ -50,6 +53,11 @@ export function createContainer(prisma: PrismaClient): Container {
   const revenueRepository = new RevenueRepository(prisma);
   const revenueService = new RevenueService(revenueRepository);
   const revenueController = new RevenueController(revenueService);
+
+  // Admin module (isolated)
+  const adminRepository = new AdminRepository(prisma);
+  const adminService = new AdminService(adminRepository);
+  const adminController = new AdminController(adminService);
 
   // Services
   const authService = new AuthService(userRepository, vendorRepository, studentRepository);
@@ -73,10 +81,12 @@ export function createContainer(prisma: PrismaClient): Container {
     revenueService,
     vendorService,
     studentService,
+    adminService,
     authController,
     revenueController,
     sduiController,
     vendorController,
     studentController,
+    adminController,
   };
 }

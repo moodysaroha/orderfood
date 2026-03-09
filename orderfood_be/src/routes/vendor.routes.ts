@@ -45,7 +45,7 @@ const updateItemSchema = z.object({
 });
 
 const updateStatusSchema = z.object({
-  status: z.enum(['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'DELIVERED', 'CANCELLED']),
+  status: z.enum(['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'CANCELLED']),
 });
 
 export function createVendorRoutes(controller: VendorController): Router {

@@ -29,8 +29,9 @@ Vendors are campus food sellers who use the app to run their food business digit
   - Edit prices, descriptions, or remove items entirely
 - **Manage Orders:**
   - See all incoming orders from students
-  - Update order status step by step: Confirmed, Preparing, Ready for Pickup, Delivered
+  - Update order status step by step: Confirmed, Preparing, Ready
   - Cancel orders if needed
+  - Revenue is recorded when order reaches Ready status
 
 ### 2. Students
 
@@ -46,7 +47,27 @@ Students are the customers who browse menus and order food.
   - Place the order with a single tap
 - **Track Orders:**
   - View order history
-  - See current status of each order (Pending, Confirmed, Preparing, Ready, Delivered)
+  - See current status of each order (Pending, Confirmed, Preparing, Ready)
+  - Come to restaurant when order is Ready to pick up food
+
+### 3. Admin (Platform Owner)
+
+The admin dashboard gives the platform owner/developer full visibility into the system.
+
+**What admins can do:**
+
+- **View Platform Stats:**
+  - Total vendors, students, and orders
+  - Revenue today and total revenue
+- **Manage Vendors:**
+  - View all registered vendors with their stats
+  - Delete vendors and their associated data
+- **Manage Students:**
+  - View all registered students with their order history
+  - Delete students and their associated data
+- **View All Orders:**
+  - See all orders across all vendors
+  - Filter orders by status
 
 ---
 
@@ -54,7 +75,7 @@ Students are the customers who browse menus and order food.
 
 All revenue tracking is based on **real order data** -- nothing is hardcoded or estimated.
 
-- When a vendor marks an order as "Delivered", the order total is automatically recorded as revenue
+- When a vendor marks an order as "Ready", the order total is automatically recorded as revenue
 - The dashboard shows live numbers pulled from the database
 - All prices are in **Indian Rupees (INR)**
 - The system is designed to support **future payment features** like QR code payments and platform commission, without needing to change how orders or menus work
@@ -74,6 +95,8 @@ All revenue tracking is based on **real order data** -- nothing is hardcoded or 
 | Place orders                             | --     | Yes     |
 | Order history                            | Yes    | Yes     |
 | Order status tracking                    | Yes    | Yes     |
+| Logout from app                          | Yes    | Yes     |
+| Light/Dark theme support                 | Yes    | Yes     |
 | Revenue tracking (INR)                   | Yes    | --      |
 | Server-driven UI (no app updates needed) | Yes    | Yes     |
 
@@ -98,8 +121,10 @@ The following features are planned for future releases:
 - **Platform Commission** -- A percentage-based commission system for the platform owner
 - **Multiple Vendors** -- Students will be able to browse and order from multiple campus restaurants
 - **Push Notifications** -- Real-time alerts for order status changes
-- add logout button for both student and vendor
-- change theme to be purple
-- add both light and dark theme
-- add admin dashboard for me
-- remove delivery feature and status till order placed and ready. It's not a delivery app. Students will be able to come to restaurant and eat food without waiting for preparation time. 
+
+## Admin Credentials
+
+After running the database seed, use these credentials to access the admin dashboard:
+
+- **Email:** admin@orderfood.com
+- **Password:** password123 

@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/network/api_client.dart';
-import '../../../core/sdui/sdui_screen_widget.dart';
-import '../../../core/sdui/sdui_models.dart';
+import '../../core/network/api_client.dart';
+import '../../core/sdui/sdui_screen_widget.dart';
 
-class VendorDashboardScreen extends ConsumerWidget {
+class AdminDashboardScreen extends ConsumerWidget {
   final VoidCallback onLogout;
 
-  const VendorDashboardScreen({super.key, required this.onLogout});
+  const AdminDashboardScreen({super.key, required this.onLogout});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -15,7 +14,7 @@ class VendorDashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: const Text('Admin Dashboard'),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -25,20 +24,24 @@ class VendorDashboardScreen extends ConsumerWidget {
         ],
       ),
       body: SduiScreenWidget(
-        title: 'Dashboard',
+        title: 'Admin Dashboard',
         showAppBar: false,
         fetchScreen: () async {
-          final res = await api.get('/vendor/dashboard');
+          final res = await api.get('/admin/dashboard');
           return res.data as Map<String, dynamic>;
         },
         onAction: (action, ctx) {
           if (action.type == 'navigate' && action.route != null) {
-            final route = action.route!.replaceAll(':id', ctx?['id'] ?? '');
-            Navigator.of(context).pushNamed(route);
+            _handleNavigation(context, action.route!);
           }
         },
       ),
     );
+  }
+
+  void _handleNavigation(BuildContext context, String route) {
+    // Admin dashboard navigation is handled by the bottom nav
+    // The SDUI actions are mainly for in-screen interactions
   }
 
   void _confirmLogout(BuildContext context) {

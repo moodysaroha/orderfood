@@ -114,7 +114,8 @@ export class VendorService implements IVendorService {
 
     const updated = await this.orderRepo.updateStatus(orderId, status as OrderStatus);
 
-    if (status === OrderStatus.DELIVERED && this.revenueService) {
+    // Record revenue when order is READY (final status - students pick up from restaurant)
+    if (status === OrderStatus.READY && this.revenueService) {
       await this.revenueService.recordRevenue({
         vendorId: order.vendorId,
         orderId: order.id,
