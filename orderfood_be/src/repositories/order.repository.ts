@@ -2,10 +2,16 @@ import { PrismaClient, Order, OrderStatus, OrderItem } from '@prisma/client';
 
 type OrderWithItems = Order & { items: (OrderItem & { menuItem: { name: string } })[] };
 type OrderWithStudent = Order & { student: { name: string }; items: (OrderItem & { menuItem: { name: string } })[] };
+type OrderWithFullDetails = Order & {
+  student: { name: string; userId: string };
+  vendor: { restaurantName: string; userId: string };
+  items: (OrderItem & { menuItem: { name: string } })[];
+};
 
 export interface IOrderRepository {
   findById(id: string): Promise<OrderWithItems | null>;
   findByIdWithStudent(id: string): Promise<OrderWithStudent | null>;
+  findByIdWithDetails(id: string): Promise<OrderWithFullDetails | null>;
   findByStudentId(studentId: string): Promise<Order[]>;
   findByVendorId(vendorId: string, filters?: { status?: OrderStatus; date?: Date }): Promise<OrderWithStudent[]>;
   create(data: {
@@ -16,6 +22,7 @@ export interface IOrderRepository {
   }): Promise<OrderWithItems>;
   updateStatus(id: string, status: OrderStatus): Promise<Order>;
   countByVendorAndDate(vendorId: string, date: Date): Promise<number>;
+  getRecentStudentUserIdsByVendor(vendorId: string, days: number): Promise<string[]>;
 }
 
 export class OrderRepository implements IOrderRepository {
@@ -33,6 +40,17 @@ export class OrderRepository implements IOrderRepository {
       where: { id },
       include: {
         student: { select: { name: true } },
+        items: { include: { menuItem: { select: { name: true } } } },
+      },
+    });
+  }
+
+  async findByIdWithDetails(id: string): Promise<OrderWithFullDetails | null> {
+    return this.prisma.order.findUnique({
+      where: { id },
+      include: {
+        student: { select: { name: true, userId: true } },
+        vendor: { select: { restaurantName: true, userId: true } },
         items: { include: { menuItem: { select: { name: true } } } },
       },
     });
@@ -98,5 +116,23 @@ export class OrderRepository implements IOrderRepository {
     return this.prisma.order.count({
       where: { vendorId, createdAt: { gte: start, lte: end } },
     });
+  }
+
+  async getRecentStudentUserIdsByVendor(vendorId: string, days: number): Promise<string[]> {
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+
+    const orders = await this.prisma.order.findMany({
+      where: {
+        vendorId,
+        createdAt: { gte: since },
+      },
+      include: {
+        student: { select: { userId: true } },
+      },
+      distinct: ['studentId'],
+    });
+
+    return orders.map((o) => o.student.userId);
   }
 }

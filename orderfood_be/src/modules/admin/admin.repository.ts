@@ -1,10 +1,19 @@
-import { PrismaClient, OrderStatus } from '@prisma/client';
+import { PrismaClient, OrderStatus, Role } from '@prisma/client';
+import bcrypt from 'bcrypt';
 import {
   PlatformStats,
   VendorWithStats,
   StudentWithStats,
   OrderWithDetails,
+  BulkVendorInput,
 } from './admin.types';
+import { rupeesToPaise } from '../../utils/currency';
+
+export interface CreatedVendor {
+  id: string;
+  email: string;
+  restaurantName: string;
+}
 
 export interface IAdminRepository {
   getPlatformStats(): Promise<PlatformStats>;
@@ -13,6 +22,8 @@ export interface IAdminRepository {
   getAllOrders(filters?: { status?: OrderStatus; vendorId?: string }): Promise<OrderWithDetails[]>;
   deleteVendor(vendorId: string): Promise<void>;
   deleteStudent(studentId: string): Promise<void>;
+  createVendorWithMenu(input: BulkVendorInput): Promise<CreatedVendor>;
+  emailExists(email: string): Promise<boolean>;
 }
 
 export class AdminRepository implements IAdminRepository {
@@ -161,5 +172,50 @@ export class AdminRepository implements IAdminRepository {
       this.prisma.student.delete({ where: { id: studentId } }),
       this.prisma.user.delete({ where: { id: student.userId } }),
     ]);
+  }
+
+  async emailExists(email: string): Promise<boolean> {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    return !!user;
+  }
+
+  async createVendorWithMenu(input: BulkVendorInput): Promise<CreatedVendor> {
+    const passwordHash = await bcrypt.hash(input.password, 12);
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email: input.email,
+          passwordHash,
+          role: Role.VENDOR,
+        },
+      });
+
+      const vendor = await tx.vendor.create({
+        data: {
+          userId: user.id,
+          restaurantName: input.restaurantName,
+          description: input.description,
+        },
+      });
+
+      if (input.menuItems && input.menuItems.length > 0) {
+        await tx.menuItem.createMany({
+          data: input.menuItems.map((item, index) => ({
+            vendorId: vendor.id,
+            name: item.name,
+            description: item.description,
+            priceInPaise: rupeesToPaise(item.priceInRupees),
+            category: item.category,
+            isAvailable: item.isAvailable ?? true,
+            sortOrder: index + 1,
+          })),
+        });
+      }
+
+      return { id: vendor.id, email: user.email, restaurantName: vendor.restaurantName };
+    });
+
+    return result;
   }
 }

@@ -39,14 +39,23 @@ Students are the customers who browse menus and order food.
 
 **What students can do:**
 
+- **Browse Multiple Restaurants:**
+  - View all available campus restaurants
+  - See each restaurant's menu item count
+  - Tap to browse a specific restaurant's menu
 - **Browse the Menu** of available campus vendors
   - See food items with photos, descriptions, and prices
   - Menu updates instantly when a vendor marks something as sold out (no refresh needed)
 - **Place Orders:**
   - Select items and quantities
   - Place the order with a single tap
+- **Pay with QR Code:**
+  - Generate UPI QR code for any order
+  - Scan QR code with any UPI app (GPay, PhonePe, Paytm, etc.)
+  - Open UPI app directly from the payment screen
+  - Payment status automatically updates
 - **Track Orders:**
-  - View order history
+  - View order history with payment status
   - See current status of each order (Pending, Confirmed, Preparing, Ready)
   - Come to restaurant when order is Ready to pick up food
 
@@ -62,6 +71,7 @@ The admin dashboard gives the platform owner/developer full visibility into the 
 - **Manage Vendors:**
   - View all registered vendors with their stats
   - Delete vendors and their associated data
+  - Bulk upload vendors with menu items via JSON
 - **Manage Students:**
   - View all registered students with their order history
   - Delete students and their associated data
@@ -91,10 +101,13 @@ All revenue tracking is based on **real order data** -- nothing is hardcoded or 
 | Menu management                          | Yes    | --      |
 | Photo upload for dishes                  | Yes    | --      |
 | Mark items sold out / in stock           | Yes    | --      |
+| Browse multiple restaurants              | --     | Yes     |
 | Browse menu                              | --     | Yes     |
 | Place orders                             | --     | Yes     |
+| QR Code payments (UPI)                   | --     | Yes     |
 | Order history                            | Yes    | Yes     |
 | Order status tracking                    | Yes    | Yes     |
+| Payment status tracking                  | Yes    | Yes     |
 | Logout from app                          | Yes    | Yes     |
 | Light/Dark theme support                 | Yes    | Yes     |
 | Revenue tracking (INR)                   | Yes    | --      |
@@ -117,10 +130,9 @@ All prices and revenue figures are displayed in **Indian Rupees (INR)**. For exa
 
 The following features are planned for future releases:
 
-- **QR Code Payments** -- Students will be able to pay via QR code directly in the app
 - **Platform Commission** -- A percentage-based commission system for the platform owner
-- **Multiple Vendors** -- Students will be able to browse and order from multiple campus restaurants
 - **Push Notifications** -- Real-time alerts for order status changes
+- **Order Analytics** -- Detailed analytics for vendors and admins
 
 ## Admin Credentials
 

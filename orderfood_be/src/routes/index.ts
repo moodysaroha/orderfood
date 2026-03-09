@@ -6,6 +6,8 @@ import { createVendorRoutes } from './vendor.routes';
 import { createStudentRoutes } from './student.routes';
 import { createRevenueRoutes } from '../modules/revenue';
 import { createAdminRoutes } from '../modules/admin';
+import { createPaymentRoutes } from '../modules/payment';
+import { createNotificationRoutes } from '../modules/notification';
 
 export function createRouter(container: Container): Router {
   const router = Router();
@@ -16,6 +18,8 @@ export function createRouter(container: Container): Router {
   router.use('/vendor', createVendorRoutes(container.vendorController));
   router.use('/student', createStudentRoutes(container.studentController));
   router.use('/admin', createAdminRoutes(container.adminController));
+  router.use('/payment', createPaymentRoutes(container.paymentController));
+  router.use('/notifications', createNotificationRoutes(container.notificationController));
 
   return router;
 }

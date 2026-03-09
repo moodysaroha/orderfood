@@ -1,0 +1,21 @@
+cd orderfood_be
+npm run prisma:generate
+npx prisma migrate dev --name add_payment_module
+npm run prisma:seed
+
+{
+  "vendors": [
+    {
+      "email": "vendor@example.com",
+      "password": "password123",
+      "restaurantName": "Campus Cafe",
+      "description": "Fresh coffee and snacks",
+      "menuItems": [
+        { "name": "Espresso", "priceInRupees": 80, "category": "Beverages" },
+        { "name": "Sandwich", "priceInRupees": 120, "category": "Snacks" }
+      ]
+    }
+  ]
+}
+
+npx prisma migrate dev --name add_notifications

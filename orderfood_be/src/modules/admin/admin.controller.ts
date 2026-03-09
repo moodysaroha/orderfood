@@ -1,6 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import { IAdminService } from './admin.service';
 import { formatINR, paiseToRupees } from '../../utils/currency';
+
+function paramStr(val: string | string[] | undefined): string {
+  return Array.isArray(val) ? val[0] : val ?? '';
+}
 import {
   AdminDashboardScreenBuilder,
   AdminVendorsScreenBuilder,
@@ -114,7 +118,7 @@ export class AdminController {
 
   deleteVendor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      await this.adminService.deleteVendor(req.params.vendorId);
+      await this.adminService.deleteVendor(paramStr(req.params.vendorId));
       res.json({ success: true, message: 'Vendor deleted' });
     } catch (err) {
       next(err);
@@ -123,8 +127,23 @@ export class AdminController {
 
   deleteStudent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      await this.adminService.deleteStudent(req.params.studentId);
+      await this.adminService.deleteStudent(paramStr(req.params.studentId));
       res.json({ success: true, message: 'Student deleted' });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  bulkUploadVendors = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const vendors = req.body.vendors;
+      if (!Array.isArray(vendors) || vendors.length === 0) {
+        res.status(400).json({ success: false, error: 'vendors array is required' });
+        return;
+      }
+
+      const result = await this.adminService.bulkCreateVendors(vendors);
+      res.status(201).json({ success: true, data: result });
     } catch (err) {
       next(err);
     }

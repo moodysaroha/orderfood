@@ -3,7 +3,9 @@ import { IMenuItemRepository } from '../repositories/menu-item.repository';
 import { IOrderRepository } from '../repositories/order.repository';
 import { IVendorRepository } from '../repositories/vendor.repository';
 import { IRevenueService } from '../modules/revenue';
+import { INotificationService } from '../modules/notification';
 import { AppError } from '../middleware';
+import { paiseToRupees } from '../utils/currency';
 
 interface OrderItemInput {
   menuItemId: string;
@@ -12,6 +14,8 @@ interface OrderItemInput {
 
 interface PlaceOrderInput {
   studentId: string;
+  studentName: string;
+  studentUserId: string;
   vendorId: string;
   items: OrderItemInput[];
 }
@@ -28,6 +32,7 @@ export class StudentService implements IStudentService {
     private orderRepo: IOrderRepository,
     private vendorRepo: IVendorRepository,
     private revenueService: IRevenueService,
+    private notificationService?: INotificationService,
   ) {}
 
   async placeOrder(input: PlaceOrderInput): Promise<unknown> {
@@ -66,6 +71,17 @@ export class StudentService implements IStudentService {
       totalAmountInPaise,
       items: orderItems,
     });
+
+    if (this.notificationService && vendor.userId) {
+      const context = {
+        orderId: order.id,
+        orderTotal: `₹${paiseToRupees(totalAmountInPaise)}`,
+        studentName: input.studentName,
+        vendorName: vendor.restaurantName,
+        itemCount: orderItems.length,
+      };
+      await this.notificationService.notifyOrderPlaced(vendor.userId, context);
+    }
 
     return order;
   }

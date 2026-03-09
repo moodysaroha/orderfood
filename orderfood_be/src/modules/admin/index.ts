@@ -8,4 +8,7 @@ export type {
   VendorWithStats,
   StudentWithStats,
   OrderWithDetails,
+  BulkVendorInput,
+  BulkMenuItemInput,
+  BulkUploadResult,
 } from './admin.types';

@@ -6,6 +6,8 @@ import {
   VendorWithStats,
   StudentWithStats,
   OrderWithDetails,
+  BulkVendorInput,
+  BulkUploadResult,
 } from './admin.types';
 import { paiseToRupees, formatINR } from '../../utils/currency';
 
@@ -17,6 +19,7 @@ export interface IAdminService {
   getAllOrders(filters?: { status?: string; vendorId?: string }): Promise<OrderWithDetails[]>;
   deleteVendor(vendorId: string): Promise<void>;
   deleteStudent(studentId: string): Promise<void>;
+  bulkCreateVendors(vendors: BulkVendorInput[]): Promise<BulkUploadResult>;
 }
 
 export class AdminService implements IAdminService {
@@ -59,5 +62,37 @@ export class AdminService implements IAdminService {
 
   async deleteStudent(studentId: string): Promise<void> {
     await this.adminRepo.deleteStudent(studentId);
+  }
+
+  async bulkCreateVendors(vendors: BulkVendorInput[]): Promise<BulkUploadResult> {
+    const result: BulkUploadResult = {
+      success: 0,
+      failed: 0,
+      errors: [],
+      vendors: [],
+    };
+
+    for (const vendor of vendors) {
+      try {
+        const exists = await this.adminRepo.emailExists(vendor.email);
+        if (exists) {
+          result.failed++;
+          result.errors.push({ email: vendor.email, error: 'Email already exists' });
+          continue;
+        }
+
+        const created = await this.adminRepo.createVendorWithMenu(vendor);
+        result.success++;
+        result.vendors.push(created);
+      } catch (err) {
+        result.failed++;
+        result.errors.push({
+          email: vendor.email,
+          error: err instanceof Error ? err.message : 'Unknown error',
+        });
+      }
+    }
+
+    return result;
   }
 }

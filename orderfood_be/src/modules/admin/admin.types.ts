@@ -45,3 +45,26 @@ export interface OrderWithDetails {
   itemCount: number;
   createdAt: Date;
 }
+
+export interface BulkVendorInput {
+  email: string;
+  password: string;
+  restaurantName: string;
+  description?: string;
+  menuItems?: BulkMenuItemInput[];
+}
+
+export interface BulkMenuItemInput {
+  name: string;
+  description?: string;
+  priceInRupees: number;
+  category?: string;
+  isAvailable?: boolean;
+}
+
+export interface BulkUploadResult {
+  success: number;
+  failed: number;
+  errors: { email: string; error: string }[];
+  vendors: { id: string; email: string; restaurantName: string }[];
+}

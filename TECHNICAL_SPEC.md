@@ -33,9 +33,12 @@ OrderFood is a mobile-first food ordering platform for campus restaurants. It co
 |----------|-----------|
 | Server-Driven UI | Update app layouts without releasing new app versions |
 | Paise-based currency | Avoid floating-point precision issues (1 INR = 100 paise) |
-| Isolated modules | Revenue and Admin modules are self-contained for future extensibility |
+| Isolated modules | Revenue, Admin, Payment, Notification modules are self-contained for extensibility |
 | JWT authentication | Stateless auth, mobile-friendly |
 | Pickup-based flow | No delivery - students pick up orders when READY |
+| UPI QR Payments | Native Indian payment method, works with all UPI apps |
+| Multi-vendor support | Students can browse and order from multiple restaurants |
+| Push notifications | Real-time alerts via Firebase Cloud Messaging (FCM) |
 
 ---
 
@@ -66,6 +69,11 @@ OrderFood is a mobile-first food ordering platform for campus restaurants. It co
 | HTTP Client | Dio | API communication |
 | Secure Storage | flutter_secure_storage | Token persistence |
 | Image Caching | cached_network_image | Efficient image loading |
+| QR Code | qr_flutter | QR code generation |
+| URL Launcher | url_launcher | Open UPI apps |
+| Firebase Core | firebase_core | Firebase initialization |
+| Push Notifications | firebase_messaging | FCM push notifications |
+| Local Notifications | flutter_local_notifications | Foreground notification display |
 
 ---
 
@@ -76,19 +84,23 @@ OrderFood is a mobile-first food ordering platform for campus restaurants. It co
 - Manages menu items (CRUD, images, availability)
 - Views dashboard with revenue stats
 - Manages incoming orders (status updates)
+- Receives push notifications for new orders and payments
 - Can logout from app
 
 ### STUDENT
+- Browses multiple restaurants
 - Browses restaurant menus
 - Places orders
-- Tracks order history and status
+- Pays via UPI QR code
+- Tracks order history, payment status
 - Picks up food when order is READY
+- Receives push notifications for order updates, stock changes
 - Can logout from app
 
 ### ADMIN
 - Platform owner/developer
 - Views platform-wide statistics
-- Manages all vendors (view, delete)
+- Manages all vendors (view, delete, bulk upload)
 - Manages all students (view, delete)
 - Views all orders across vendors
 - Can logout from app
@@ -185,6 +197,8 @@ Flutter Widgets (native rendering)
 |------|--------|
 | Role | `VENDOR`, `STUDENT`, `ADMIN` |
 | OrderStatus | `PENDING`, `CONFIRMED`, `PREPARING`, `READY`, `CANCELLED` |
+| PaymentStatus | `PENDING`, `COMPLETED`, `FAILED`, `REFUNDED` |
+| NotificationType | `ORDER_PLACED`, `ORDER_CONFIRMED`, `ORDER_PREPARING`, `ORDER_READY`, `ORDER_CANCELLED`, `ITEM_OUT_OF_STOCK`, `ITEM_BACK_IN_STOCK`, `PAYMENT_RECEIVED`, `PAYMENT_FAILED`, `GENERAL` |
 
 ### Models
 
@@ -195,11 +209,14 @@ Flutter Widgets (native rendering)
 | Student | Customer profile | userId, name |
 | Admin | Platform admin profile | userId, name |
 | MenuItem | Food items | vendorId, name, priceInPaise, isAvailable |
-| Order | Customer orders | studentId, vendorId, status, totalAmountInPaise |
+| Order | Customer orders | studentId, vendorId, status, paymentStatus, totalAmountInPaise |
 | OrderItem | Line items | orderId, menuItemId, quantity, priceAtOrderInPaise |
+| Payment | UPI payments | orderId, amountInPaise, status, qrCodeData, transactionId |
 | RevenueEntry | Per-order revenue | vendorId, orderId, grossAmountInPaise, netAmountInPaise |
 | RevenueSummary | Daily aggregates | vendorId, date, totalOrderCount, netRevenueInPaise |
 | SduiLayout | Stored screen layouts | screenName, role, layoutJson |
+| DeviceToken | FCM device tokens | userId, token, platform, isActive |
+| Notification | Notification history | userId, type, title, body, data, isRead |
 
 ### Relationships
 
@@ -207,6 +224,8 @@ Flutter Widgets (native rendering)
 User 1:1 Vendor
 User 1:1 Student
 User 1:1 Admin
+User 1:N DeviceToken
+User 1:N Notification
 Vendor 1:N MenuItem
 Vendor 1:N Order
 Vendor 1:N RevenueEntry
@@ -214,6 +233,7 @@ Vendor 1:N RevenueSummary
 Student 1:N Order
 Order 1:N OrderItem
 Order 1:1 RevenueEntry
+Order 1:1 Payment
 MenuItem 1:N OrderItem
 ```
 
@@ -247,9 +267,10 @@ MenuItem 1:N OrderItem
 
 | Endpoint | Method | Auth | Purpose |
 |----------|--------|------|---------|
+| `/api/student/vendors` | GET | Yes | List all vendors with menu counts |
 | `/api/student/menu/:vendorId` | GET | Yes | SDUI menu for vendor |
 | `/api/student/orders` | POST | STUDENT | Place order |
-| `/api/student/orders` | GET | STUDENT | Order history |
+| `/api/student/orders` | GET | STUDENT | Order history (with payment status) |
 | `/api/student/orders/:id` | GET | STUDENT | Order detail |
 
 ### Admin Endpoints
@@ -266,6 +287,17 @@ MenuItem 1:N OrderItem
 | `/api/admin/orders` | GET | ADMIN | All orders |
 | `/api/admin/vendors/:id` | DELETE | ADMIN | Delete vendor |
 | `/api/admin/students/:id` | DELETE | ADMIN | Delete student |
+| `/api/admin/vendors/bulk` | POST | ADMIN | Bulk upload vendors with menus |
+
+### Payment Endpoints
+
+| Endpoint | Method | Auth | Purpose |
+|----------|--------|------|---------|
+| `/api/payment` | POST | STUDENT | Create payment (returns QR code) |
+| `/api/payment/:paymentId` | GET | Yes | Get payment details |
+| `/api/payment/order/:orderId` | GET | Yes | Get payment by order ID |
+| `/api/payment/:paymentId/confirm` | POST | Yes | Confirm payment with transaction ID |
+| `/api/payment/:paymentId/status` | GET | Yes | Check payment status |
 
 ### Revenue Endpoints
 
@@ -275,6 +307,17 @@ MenuItem 1:N OrderItem
 | `/api/revenue/overall` | GET | VENDOR | Lifetime summary |
 | `/api/revenue/summary` | GET | VENDOR | Date range summary |
 | `/api/revenue/entries` | GET | VENDOR | Paginated entries |
+
+### Notification Endpoints
+
+| Endpoint | Method | Auth | Purpose |
+|----------|--------|------|---------|
+| `/api/notifications/device/register` | POST | Yes | Register device for push notifications |
+| `/api/notifications/device/unregister` | POST | Yes | Unregister device from push notifications |
+| `/api/notifications` | GET | Yes | Get paginated notification history |
+| `/api/notifications/unread-count` | GET | Yes | Get count of unread notifications |
+| `/api/notifications/:id/read` | PATCH | Yes | Mark notification as read |
+| `/api/notifications/read-all` | PATCH | Yes | Mark all notifications as read |
 
 ### SDUI Endpoints
 
@@ -443,11 +486,34 @@ MenuItem 1:N OrderItem
 | File | Purpose |
 |------|---------|
 | `src/modules/admin/index.ts` | Module barrel export |
-| `src/modules/admin/admin.types.ts` | Platform stats types |
-| `src/modules/admin/admin.repository.ts` | Platform-wide queries |
+| `src/modules/admin/admin.types.ts` | Platform stats types, bulk upload types |
+| `src/modules/admin/admin.repository.ts` | Platform-wide queries, bulk vendor creation |
 | `src/modules/admin/admin.service.ts` | Admin business logic |
 | `src/modules/admin/admin.controller.ts` | Admin API + SDUI handlers |
 | `src/modules/admin/admin.routes.ts` | `/api/admin/*` routes |
+
+#### Payment Module
+
+| File | Purpose |
+|------|---------|
+| `src/modules/payment/index.ts` | Module barrel export |
+| `src/modules/payment/payment.types.ts` | Payment, QR code types |
+| `src/modules/payment/payment.repository.ts` | Payment data access |
+| `src/modules/payment/payment.service.ts` | QR generation, payment confirmation |
+| `src/modules/payment/payment.controller.ts` | Payment API handlers |
+| `src/modules/payment/payment.routes.ts` | `/api/payment/*` routes |
+
+#### Notification Module
+
+| File | Purpose |
+|------|---------|
+| `src/modules/notification/index.ts` | Module barrel export |
+| `src/modules/notification/notification.types.ts` | Notification, device token types |
+| `src/modules/notification/notification.repository.ts` | Notification + device data access |
+| `src/modules/notification/notification.service.ts` | Send notifications, manage history |
+| `src/modules/notification/notification.controller.ts` | Notification API handlers |
+| `src/modules/notification/notification.routes.ts` | `/api/notifications/*` routes |
+| `src/modules/notification/fcm.service.ts` | Firebase Cloud Messaging integration |
 
 #### SDUI
 
@@ -472,7 +538,7 @@ MenuItem 1:N OrderItem
 
 | File | Purpose |
 |------|---------|
-| `prisma/schema.prisma` | Database schema (13 models, 2 enums) |
+| `prisma/schema.prisma` | Database schema (14 models, 3 enums) |
 | `prisma/seed.ts` | Test data seeding |
 
 ### Frontend Files (`orderfood/lib/`)
@@ -510,6 +576,20 @@ MenuItem 1:N OrderItem
 | `core/sdui/sdui_registry.dart` | `SduiWidgetFactory`, component registration |
 | `core/sdui/widgets/sdui_widgets.dart` | Widget builder functions for all components |
 
+#### Core - Notifications
+
+| File | Purpose |
+|------|---------|
+| `core/notifications/notification_service.dart` | Firebase messaging setup, local notifications |
+| `core/notifications/notification_provider.dart` | State management for notifications |
+| `core/notifications/notification_bell.dart` | AppBar notification icon with badge |
+
+#### Features - Notifications
+
+| File | Purpose |
+|------|---------|
+| `features/notifications/notifications_screen.dart` | Notification history list UI |
+
 #### Features - Auth
 
 | File | Purpose |
@@ -529,9 +609,10 @@ MenuItem 1:N OrderItem
 
 | File | Purpose |
 |------|---------|
-| `features/student/student_home_screen.dart` | Bottom nav, vendor list, logout |
+| `features/student/student_home_screen.dart` | Bottom nav, vendor list (API), logout |
 | `features/student/menu/student_menu_screen.dart` | SDUI menu browsing |
-| `features/student/orders/student_orders_screen.dart` | Order history |
+| `features/student/orders/student_orders_screen.dart` | Order history, payment status |
+| `features/student/payment/qr_payment_screen.dart` | QR code payment, UPI deep link |
 
 #### Features - Admin
 
@@ -616,15 +697,34 @@ Student picks up food
 
 ---
 
+## Payment Flow
+
+```
+Student places order
+        ↓
+    [ORDER CREATED - PAYMENT PENDING]
+        ↓
+Student initiates payment
+        ↓
+    [QR CODE GENERATED]
+        ↓
+Student scans with UPI app (GPay, PhonePe, Paytm)
+        ↓
+    [PAYMENT COMPLETED]
+        ↓
+Payment status updates (polling or manual confirm)
+```
+
+---
+
 ## Future Extension Points
 
 | Feature | Where to Add |
 |---------|-------------|
-| Payment Gateway | `src/modules/revenue/revenue.service.ts` - inject payment service |
-| Commission System | `RevenueEntry.commissionInPaise` column ready, update `recordRevenue()` |
+| Commission System | `RevenueEntry.commissionInPaise` column ready, update `recordRevenue()` in revenue module |
 | Push Notifications | New module at `src/modules/notifications/` |
-| Multiple Vendors | Update student menu to list vendors, already supported in schema |
 | Analytics | New module at `src/modules/analytics/`, admin dashboard integration |
+| Payment Refunds | Extend `src/modules/payment/payment.service.ts` |
 
 ---
 

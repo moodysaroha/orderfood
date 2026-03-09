@@ -2,8 +2,9 @@ import { MenuItem, OrderStatus } from '@prisma/client';
 import { IMenuItemRepository } from '../repositories/menu-item.repository';
 import { IOrderRepository } from '../repositories/order.repository';
 import { IRevenueService } from '../modules/revenue';
+import { INotificationService } from '../modules/notification';
 import { AppError } from '../middleware';
-import { rupeesToPaise } from '../utils/currency';
+import { rupeesToPaise, paiseToRupees } from '../utils/currency';
 
 interface CreateMenuItemInput {
   vendorId: string;
@@ -26,11 +27,11 @@ export interface IVendorService {
   getMenuItems(vendorId: string): Promise<MenuItem[]>;
   createMenuItem(input: CreateMenuItemInput): Promise<MenuItem>;
   updateMenuItem(vendorId: string, itemId: string, input: UpdateMenuItemInput): Promise<MenuItem>;
-  toggleAvailability(vendorId: string, itemId: string): Promise<MenuItem>;
+  toggleAvailability(vendorId: string, itemId: string, vendorName?: string): Promise<MenuItem>;
   setMenuItemImage(vendorId: string, itemId: string, imageUrl: string): Promise<MenuItem>;
   deleteMenuItem(vendorId: string, itemId: string): Promise<void>;
   getOrders(vendorId: string, filters?: { status?: string; date?: string }): Promise<unknown[]>;
-  updateOrderStatus(vendorId: string, orderId: string, status: string): Promise<unknown>;
+  updateOrderStatus(vendorId: string, orderId: string, status: string, vendorName?: string): Promise<unknown>;
 }
 
 export class VendorService implements IVendorService {
@@ -38,6 +39,7 @@ export class VendorService implements IVendorService {
     private menuItemRepo: IMenuItemRepository,
     private orderRepo: IOrderRepository,
     private revenueService?: IRevenueService,
+    private notificationService?: INotificationService,
   ) {}
 
   async getMenuItems(vendorId: string): Promise<MenuItem[]> {
@@ -71,13 +73,34 @@ export class VendorService implements IVendorService {
     return this.menuItemRepo.update(itemId, updateData);
   }
 
-  async toggleAvailability(vendorId: string, itemId: string): Promise<MenuItem> {
+  async toggleAvailability(vendorId: string, itemId: string, vendorName?: string): Promise<MenuItem> {
     const item = await this.menuItemRepo.findById(itemId);
     if (!item || item.vendorId !== vendorId) {
       throw new AppError(404, 'Menu item not found');
     }
 
-    return this.menuItemRepo.update(itemId, { isAvailable: !item.isAvailable });
+    const wasAvailable = item.isAvailable;
+    const updated = await this.menuItemRepo.update(itemId, { isAvailable: !item.isAvailable });
+
+    if (this.notificationService && vendorName) {
+      const recentStudentUserIds = await this.orderRepo.getRecentStudentUserIdsByVendor(vendorId, 30);
+      
+      if (recentStudentUserIds.length > 0) {
+        const context = {
+          menuItemId: itemId,
+          itemName: item.name,
+          vendorName,
+        };
+
+        if (wasAvailable) {
+          await this.notificationService.notifyItemOutOfStock(recentStudentUserIds, context);
+        } else {
+          await this.notificationService.notifyItemBackInStock(recentStudentUserIds, context);
+        }
+      }
+    }
+
+    return updated;
   }
 
   async setMenuItemImage(vendorId: string, itemId: string, imageUrl: string): Promise<MenuItem> {
@@ -106,7 +129,7 @@ export class VendorService implements IVendorService {
     return this.orderRepo.findByVendorId(vendorId, orderFilters);
   }
 
-  async updateOrderStatus(vendorId: string, orderId: string, status: string): Promise<unknown> {
+  async updateOrderStatus(vendorId: string, orderId: string, status: string, vendorName?: string): Promise<unknown> {
     const order = await this.orderRepo.findById(orderId);
     if (!order || order.vendorId !== vendorId) {
       throw new AppError(404, 'Order not found');
@@ -121,6 +144,24 @@ export class VendorService implements IVendorService {
         orderId: order.id,
         grossAmountInPaise: order.totalAmountInPaise,
       });
+    }
+
+    if (this.notificationService) {
+      const orderWithDetails = await this.orderRepo.findByIdWithDetails(orderId);
+      if (orderWithDetails) {
+        const context = {
+          orderId,
+          orderTotal: `₹${paiseToRupees(order.totalAmountInPaise)}`,
+          studentName: orderWithDetails.student?.name || 'Student',
+          vendorName: vendorName || orderWithDetails.vendor?.restaurantName || 'Restaurant',
+          itemCount: orderWithDetails.items?.length || 0,
+        };
+
+        const studentUserId = orderWithDetails.student?.userId;
+        if (studentUserId) {
+          await this.notificationService.notifyOrderStatusChange(studentUserId, status, context);
+        }
+      }
     }
 
     return updated;

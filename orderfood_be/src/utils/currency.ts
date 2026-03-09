@@ -12,6 +12,10 @@ export function paiseToRupees(paise: number): number {
   return paise / 100;
 }
 
+export function formatINR(rupees: number): string {
+  return `₹${rupees.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 export function formatPaiseToINR(paise: number): string {
   const rupees = paiseToRupees(paise);
   return `₹${rupees.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

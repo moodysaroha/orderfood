@@ -4,6 +4,7 @@ import { IRevenueService } from '../modules/revenue';
 import { DashboardScreenBuilder } from '../sdui/builders/dashboard.builder';
 import { VendorMenuScreenBuilder } from '../sdui/builders/vendor-menu.builder';
 import { IOrderRepository } from '../repositories/order.repository';
+import { IVendorRepository } from '../repositories/vendor.repository';
 import { ApiResponse } from '../types';
 import { AppError } from '../middleware';
 
@@ -20,6 +21,7 @@ export class VendorController {
     private vendorService: IVendorService,
     private orderRepo: IOrderRepository,
     revenueService: IRevenueService,
+    private vendorRepo?: IVendorRepository,
   ) {
     this.dashboardBuilder = new DashboardScreenBuilder(revenueService);
     this.menuScreenBuilder = new VendorMenuScreenBuilder();
@@ -94,7 +96,13 @@ export class VendorController {
       const vendorId = req.user?.vendorId;
       if (!vendorId) throw new AppError(403, 'Vendor access required');
 
-      const item = await this.vendorService.toggleAvailability(vendorId, paramId(req));
+      let vendorName: string | undefined;
+      if (this.vendorRepo) {
+        const vendor = await this.vendorRepo.findById(vendorId);
+        vendorName = vendor?.restaurantName;
+      }
+
+      const item = await this.vendorService.toggleAvailability(vendorId, paramId(req), vendorName);
       res.json({ success: true, data: item, message: item.isAvailable ? 'Back in stock' : 'Marked as sold out' });
     } catch (err) {
       next(err);
@@ -148,7 +156,13 @@ export class VendorController {
       const vendorId = req.user?.vendorId;
       if (!vendorId) throw new AppError(403, 'Vendor access required');
 
-      const order = await this.vendorService.updateOrderStatus(vendorId, paramId(req), req.body.status);
+      let vendorName: string | undefined;
+      if (this.vendorRepo) {
+        const vendor = await this.vendorRepo.findById(vendorId);
+        vendorName = vendor?.restaurantName;
+      }
+
+      const order = await this.vendorService.updateOrderStatus(vendorId, paramId(req), req.body.status, vendorName);
       res.json({ success: true, data: order });
     } catch (err) {
       next(err);

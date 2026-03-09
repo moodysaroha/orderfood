@@ -23,5 +23,8 @@ export function createAdminRoutes(controller: AdminController): Router {
   router.delete('/vendors/:vendorId', controller.deleteVendor);
   router.delete('/students/:studentId', controller.deleteStudent);
 
+  // Bulk upload
+  router.post('/vendors/bulk', controller.bulkUploadVendors);
+
   return router;
 }

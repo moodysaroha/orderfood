@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/sdui/sdui_screen_widget.dart';
 import '../../../core/sdui/sdui_models.dart';
+import '../../../core/notifications/notification_bell.dart';
 
 class VendorDashboardScreen extends ConsumerWidget {
   final VoidCallback onLogout;
@@ -17,6 +18,7 @@ class VendorDashboardScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Dashboard'),
         actions: [
+          const NotificationBell(),
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Logout',
