@@ -18,19 +18,23 @@ class AdminHomeScreen extends StatefulWidget {
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
   int _currentIndex = 0;
 
-  late final List<Widget> _screens = [
-    AdminDashboardScreen(onLogout: widget.onLogout),
-    const AdminVendorsScreen(),
-    const AdminStudentsScreen(),
-    const AdminOrdersScreen(),
-    const AdminSettlementsScreen(),
-    const AdminSettingsScreen(),
-  ];
+  void _navigateToTab(int index) {
+    setState(() => _currentIndex = index);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final screens = [
+      AdminDashboardScreen(onLogout: widget.onLogout, onNavigateToTab: _navigateToTab),
+      const AdminVendorsScreen(),
+      const AdminStudentsScreen(),
+      const AdminOrdersScreen(),
+      const AdminSettlementsScreen(),
+      const AdminSettingsScreen(),
+    ];
+
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: screens[_currentIndex],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (i) => setState(() => _currentIndex = i),

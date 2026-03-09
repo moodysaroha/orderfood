@@ -5,8 +5,13 @@ import '../../core/sdui/sdui_screen_widget.dart';
 
 class AdminDashboardScreen extends ConsumerWidget {
   final VoidCallback onLogout;
+  final void Function(int tabIndex) onNavigateToTab;
 
-  const AdminDashboardScreen({super.key, required this.onLogout});
+  const AdminDashboardScreen({
+    super.key,
+    required this.onLogout,
+    required this.onNavigateToTab,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -32,16 +37,33 @@ class AdminDashboardScreen extends ConsumerWidget {
         },
         onAction: (action, ctx) {
           if (action.type == 'navigate' && action.route != null) {
-            _handleNavigation(context, action.route!);
+            _handleNavigation(action.route!);
           }
         },
       ),
     );
   }
 
-  void _handleNavigation(BuildContext context, String route) {
-    // Admin dashboard navigation is handled by the bottom nav
-    // The SDUI actions are mainly for in-screen interactions
+  void _handleNavigation(String route) {
+    // Map routes to tab indices
+    // Tabs: 0=Dashboard, 1=Vendors, 2=Students, 3=Orders, 4=Settlements, 5=Settings
+    switch (route) {
+      case '/admin/vendors':
+        onNavigateToTab(1);
+        break;
+      case '/admin/students':
+        onNavigateToTab(2);
+        break;
+      case '/admin/orders':
+        onNavigateToTab(3);
+        break;
+      case '/admin/settlements':
+        onNavigateToTab(4);
+        break;
+      case '/admin/settings':
+        onNavigateToTab(5);
+        break;
+    }
   }
 
   void _confirmLogout(BuildContext context) {
